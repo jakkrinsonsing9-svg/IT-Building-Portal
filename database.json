@@ -1,0 +1,172 @@
+{
+  "users": [
+    {
+      "id": "usr-admin-001",
+      "email": "admin@it.ac.th",
+      "name": "ผู้ดูแลระบบไอที (System Administrator)",
+      "role": "admin",
+      "studentOrStaffId": "STF-9901",
+      "citizenId": "1100200112233",
+      "phone": "0812345678",
+      "department": "ศูนย์บริการสารสนเทศและเทคโนโลยี (IT Operations)",
+      "createdAt": "2026-10-09T00:00:00.000Z",
+      "passwordHash": "$2b$10$xSV3h1f4ZiCuxPrQ5ClvIOALU.FkZT5IUWLxD2H464tYbneETAGR6"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "room-401",
+      "name": "High Performance AI & Deep Learning Lab",
+      "code": "LAB-401",
+      "floor": 4,
+      "capacity": 45,
+      "type": "lab",
+      "description": "ห้องปฏิบัติการคอมพิวเตอร์สมรรถนะสูง ติดตั้งเวิร์กสเตชัน Intel Core i9 เชื่อมต่อ GPU Server สำหรับงานปัญญาประดิษฐ์และวิทยาการข้อมูล",
+      "equipment": [
+        "45x AI Workstations (RTX 4080)",
+        "จอสัมผัส Smartboard 86\"",
+        "ระบบเสียงสัมมนารอบทิศทาง",
+        "Gigabit Ethernet Drop"
+      ],
+      "status": "available",
+      "imageUrl": "/src/assets/images/it_lab_interior_1791567709768.jpg"
+    },
+    {
+      "id": "room-402",
+      "name": "Cyber Defense & Network Operations Lab",
+      "code": "LAB-402",
+      "floor": 4,
+      "capacity": 40,
+      "type": "lab",
+      "description": "ห้องปฏิบัติการความมั่นคงปลอดภัยไซเบอร์ แยกเครือข่ายทดสอบแบบ Isolated Sandbox รองรับการซ้อมแข่งขัน CTF และ Penetration Testing",
+      "equipment": [
+        "40x Security Terminals",
+        "Dedicated Hardware Firewall Sandbox",
+        "Dual 4K Projectors",
+        "Rack Patch Panels"
+      ],
+      "status": "available",
+      "imageUrl": "/src/assets/images/it_lab_interior_1791567709768.jpg"
+    },
+    {
+      "id": "room-202",
+      "name": "VR/AR Multimedia & Spatial Computing Studio",
+      "code": "STUDIO-202",
+      "floor": 2,
+      "capacity": 25,
+      "type": "studio",
+      "description": "สตูดิโอจำลองพื้นที่เสมือนจริง ติดตั้งเซ็นเซอร์ตรวจจับการเคลื่อนไหวรอบห้อง (Optical Motion Capture) และห้องเก็บเสียงสำหรับสื่อดิจิทัล",
+      "equipment": [
+        "Motion Capture Ceiling Track",
+        "Chroma Green Wall 180°",
+        "Spatial Audio Monitor",
+        "VR Headset Calibration Rig"
+      ],
+      "status": "available",
+      "imageUrl": "/src/assets/images/it_tech_devices_1791567729951.jpg"
+    },
+    {
+      "id": "room-301",
+      "name": "IT Executive Innovation & Conference Suite",
+      "code": "MEET-301",
+      "floor": 3,
+      "capacity": 20,
+      "type": "meeting",
+      "description": "ห้องประชุมผู้บริหารและคณะกรรมการวิจัย ติดตั้งระบบ Video Conference ไฮบริดระดับองค์กร พร้อมระบบจองโต๊ะและแสงสว่างอัจฉริยะ",
+      "equipment": [
+        "4K Dual Video Conference PTZ Camera",
+        "Beamforming Ceiling Microphones",
+        "AirPlay & Miracast Gateway"
+      ],
+      "status": "available",
+      "imageUrl": "/src/assets/images/it_building_hero_1791567692594.jpg"
+    },
+    {
+      "id": "room-105",
+      "name": "IoT & Embedded Robotics Hardware Workshop",
+      "code": "MAKER-105",
+      "floor": 1,
+      "capacity": 30,
+      "type": "makerspace",
+      "description": "ห้องปฏิบัติการประดิษฐ์ฮาร์ดแวร์ อุปกรณ์บัดกรีไร้ควัน เครื่องวัดสัญญาณ Oscilloscope และเครื่องพิมพ์ชิ้นงาน 3 มิติ",
+      "equipment": [
+        "10x Soldering Stations with ESD Safe",
+        "Digital Oscilloscopes",
+        "3D Rapid Prototyping Workbenches"
+      ],
+      "status": "available",
+      "imageUrl": "/src/assets/images/it_tech_devices_1791567729951.jpg"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "eq-001",
+      "name": "Meta Quest 3 Mixed Reality VR Headset Kit",
+      "category": "vr_ar",
+      "serialNumber": "MQ3-2026-IT-0089",
+      "specs": "128GB Storage, Dual RGB Color Passthrough, Touch Plus Controllers + Active Straps, Carry Case",
+      "totalQuantity": 6,
+      "availableQuantity": 6,
+      "location": "ห้องศูนย์สื่อและมัลติมีเดีย ชั้น 2 (STUDIO-202)",
+      "imageUrl": "/src/assets/images/it_tech_devices_1791567729951.jpg"
+    },
+    {
+      "id": "eq-002",
+      "name": "Apple MacBook Pro 16\" (M3 Max / 64GB RAM)",
+      "category": "computing",
+      "serialNumber": "MBP-M3M-IT-0012",
+      "specs": "16-core CPU, 40-core GPU, 64GB Unified Memory, 2TB SSD, Space Black (รองรับงาน Render & ML)",
+      "totalQuantity": 4,
+      "availableQuantity": 4,
+      "location": "ห้องบริการพัสดุและครุภัณฑ์คอมพิวเตอร์ ชั้น 3 (IT Inventory Room)",
+      "imageUrl": "/src/assets/images/it_lab_interior_1791567709768.jpg"
+    },
+    {
+      "id": "eq-003",
+      "name": "NVIDIA RTX 4090 24GB eGPU Acceleration Station",
+      "category": "computing",
+      "serialNumber": "EGPU-4090-IT-0034",
+      "specs": "Thunderbolt 4 / USB4 eGPU Enclosure with RTX 4090 24GB VRAM สำหรับฝึกโมเดล AI นอกสถานที่",
+      "totalQuantity": 3,
+      "availableQuantity": 3,
+      "location": "ห้องปฏิบัติการ AI Lab ชั้น 4 (LAB-401)",
+      "imageUrl": "/src/assets/images/it_tech_devices_1791567729951.jpg"
+    },
+    {
+      "id": "eq-004",
+      "name": "Cisco Catalyst 9300 48-Port PoE+ Enterprise Switch",
+      "category": "network",
+      "serialNumber": "CSCO-C9300-IT-0056",
+      "specs": "48x 1GbE PoE+ ports, Modular Uplinks (4x 10G SFP+), Console Cable Kit, Rackmount Brackets",
+      "totalQuantity": 5,
+      "availableQuantity": 5,
+      "location": "ห้องเครือข่ายและความมั่นคง ชั้น 4 (LAB-402)",
+      "imageUrl": "/src/assets/images/it_tech_devices_1791567729951.jpg"
+    },
+    {
+      "id": "eq-005",
+      "name": "Sony FX3 Full-Frame Cinema Line 4K Production Kit",
+      "category": "media",
+      "serialNumber": "SNY-FX3-IT-0021",
+      "specs": "4K 120p, 10-bit 4:2:2, XLR Audio Handle Unit, 24-70mm f/2.8 GM Lens, Wireless Mic Kit, Tripod",
+      "totalQuantity": 2,
+      "availableQuantity": 2,
+      "location": "ห้องบันทึกภาพและเสียง ชั้น 2 (STUDIO-202)",
+      "imageUrl": "/src/assets/images/it_tech_devices_1791567729951.jpg"
+    },
+    {
+      "id": "eq-006",
+      "name": "Fluke DSX2-8000 Versiv CableAnalyzer Pro",
+      "category": "network",
+      "serialNumber": "FLK-DSX-IT-0077",
+      "specs": "Cat 8 / Class I/II Certification Tester, Permanent Link & Channel Adapters, Calibration Valid",
+      "totalQuantity": 2,
+      "availableQuantity": 2,
+      "location": "ห้องพัสดุและเครือข่าย ชั้น 4 (LAB-402)",
+      "imageUrl": "/src/assets/images/it_tech_devices_1791567729951.jpg"
+    }
+  ],
+  "bookings": [],
+  "equipmentRequests": [],
+  "auditLogs": []
+}

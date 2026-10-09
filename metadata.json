@@ -1,0 +1,6 @@
+{
+  "name": "IT Building Portal - ระบบจองห้องและทรัพยากรส่วนกลาง",
+  "description": "ระบบจองห้องปฏิบัติการและขอยืมอุปกรณ์ส่วนกลางตึกไอที พร้อมระบบยืนยันตัวตน, จัดการสิทธิ์ RBAC, Data Masking, OWASP Top 10 Security Audit และ UI Glassmorphism",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
