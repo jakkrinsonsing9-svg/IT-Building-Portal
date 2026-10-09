@@ -11,6 +11,7 @@ import {
   SecurityAuditLog,
   OWASPScanReport,
 } from '../src/types/index.ts';
+import { supabaseManager } from './supabase.ts';
 
 const DB_FILE = path.resolve(process.cwd(), 'database.json');
 
@@ -216,12 +217,26 @@ class Store {
     } catch (err) {
       console.error('Failed to write database.json', err);
     }
+    this.mirrorToSupabase();
+  }
+
+  public getAllData(): DatabaseSchema {
+    return this.data;
+  }
+
+  public mirrorToSupabase(): void {
+    if (supabaseManager.isConnected()) {
+      supabaseManager.syncDataToSupabase(this.data).catch((err) => {
+        console.warn('Background Supabase sync notice:', err?.message || err);
+      });
+    }
   }
 
   public resetAllData(): void {
     const initial = getInitialData();
     this.data = initial;
     this.save(initial);
+    this.mirrorToSupabase();
   }
 
   public getUsers(): UserWithSensitive[] {

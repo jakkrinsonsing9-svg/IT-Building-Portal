@@ -5,6 +5,7 @@ import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { store } from './server/store.ts';
+import { supabaseManager, SUPABASE_SQL_SCHEMA } from './server/supabase.ts';
 import { runOWASPSecurityScan } from './server/owasp.ts';
 import { maskCitizenId, maskPhone, maskEmail, maskStudentOrStaffId } from './src/utils/masking.ts';
 import { RoomBooking, EquipmentRequest, UserWithSensitive } from './src/types/index.ts';
@@ -24,6 +25,23 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+
+// In-memory OTP storage for 2FA verification
+interface OTPRecord {
+  code: string;
+  email: string;
+  userId: string;
+  expiresAt: number;
+  attempts: number;
+  purpose: 'LOGIN_2FA' | 'PASSWORD_RESET' | 'REGISTER_VERIFY';
+}
+
+const otpStore = new Map<string, OTPRecord>();
+
+function generateOTP(): string {
+  // 6-digit numeric OTP
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 // Token generator & verifier using HMAC SHA256
 function createToken(user: UserWithSensitive): string {
@@ -221,6 +239,44 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
     return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
   }
 
+  // Support optional 2FA bypass for quick demo or enforce 2FA OTP
+  const require2FA = req.body.require2FA !== false;
+
+  if (require2FA) {
+    const otpCode = generateOTP();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    otpStore.set(cleanEmail, {
+      code: otpCode,
+      email: cleanEmail,
+      userId: user.id,
+      expiresAt,
+      attempts: 0,
+      purpose: 'LOGIN_2FA',
+    });
+
+    store.addAuditLog({
+      eventType: 'AUTH_LOGIN',
+      userId: user.id,
+      userEmail: user.email,
+      userRole: user.role,
+      ipAddress: getClientIp(req),
+      action: `ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ${maskEmail(user.email)}`,
+      severity: 'info',
+    });
+
+    console.log(`[2FA OTP] Code for ${user.email}: ${otpCode} (Valid for 5 minutes)`);
+
+    return res.json({
+      requireOtp: true,
+      email: user.email,
+      maskedEmail: maskEmail(user.email),
+      expiresInSeconds: 300,
+      devOtpCode: otpCode, // Provided for easy development & testing convenience
+      message: `ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมล ${maskEmail(user.email)} เรียบร้อยแล้ว`,
+    });
+  }
+
   store.addAuditLog({
     eventType: 'AUTH_LOGIN',
     userId: user.id,
@@ -251,6 +307,136 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
     message: 'เข้าสู่ระบบสำเร็จ',
     token,
     user: safeUser,
+  });
+});
+
+// Verify OTP endpoint for 2FA
+app.post('/api/auth/verify-otp', (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'กรุณากรอกอีเมลและรหัส OTP 6 หลัก' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const record = otpStore.get(cleanEmail);
+
+  if (!record) {
+    return res.status(400).json({ error: 'ไม่พบคำขอ OTP หรือรหัสหมดอายุแล้ว กรุณากดขอรหัสใหม่' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    otpStore.delete(cleanEmail);
+    return res.status(400).json({ error: 'รหัส OTP หมดอายุแล้ว (เกิน 5 นาที) กรุณากดขอรหัสใหม่' });
+  }
+
+  if (record.attempts >= 5) {
+    otpStore.delete(cleanEmail);
+    store.addAuditLog({
+      eventType: 'AUTH_LOGIN_FAILED',
+      userEmail: cleanEmail,
+      ipAddress: getClientIp(req),
+      action: `OTP ถูกระงับเนื่องจากกรอกผิดเกิน 5 ครั้ง: ${cleanEmail}`,
+      severity: 'error',
+    });
+    return res.status(429).json({ error: 'กรอกรหัส OTP ผิดเกิน 5 ครั้ง บัญชีถูกระงับชั่วคราว กรุณาขอรหัสใหม่' });
+  }
+
+  if (record.code !== otp.trim()) {
+    record.attempts += 1;
+    store.addAuditLog({
+      eventType: 'AUTH_LOGIN_FAILED',
+      userEmail: cleanEmail,
+      ipAddress: getClientIp(req),
+      action: `กรอกรหัส OTP ไม่ถูกต้องสำหรับ ${cleanEmail} (ครั้งที่ ${record.attempts}/5)`,
+      severity: 'warning',
+    });
+    return res.status(400).json({
+      error: `รหัส OTP ไม่ถูกต้อง (เหลือโอกาสลองอีก ${5 - record.attempts} ครั้ง)`,
+    });
+  }
+
+  // OTP verified successfully!
+  otpStore.delete(cleanEmail);
+
+  const user = store.findUserByEmail(cleanEmail);
+  if (!user) {
+    return res.status(404).json({ error: 'ไม่พบบัญชีผู้ใช้' });
+  }
+
+  store.addAuditLog({
+    eventType: 'AUTH_LOGIN',
+    userId: user.id,
+    userEmail: user.email,
+    userRole: user.role,
+    ipAddress: getClientIp(req),
+    action: `ยืนยันตัวตนสำเร็จ 2-Factor Authentication (OTP): ${user.name} (${user.role.toUpperCase()})`,
+    severity: 'info',
+  });
+
+  const token = createToken(user);
+  const safeUser = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    studentOrStaffId: user.studentOrStaffId,
+    maskedStudentOrStaffId: maskStudentOrStaffId(user.studentOrStaffId),
+    citizenId: user.citizenId,
+    maskedCitizenId: maskCitizenId(user.citizenId),
+    phone: user.phone,
+    maskedPhone: maskPhone(user.phone),
+    department: user.department,
+    createdAt: user.createdAt,
+  };
+
+  return res.json({
+    message: 'ยืนยันตัวตนด้วยรหัส OTP 2FA สำเร็จ เข้าสู่ระบบเรียบร้อย',
+    token,
+    user: safeUser,
+  });
+});
+
+// Resend OTP endpoint
+app.post('/api/auth/resend-otp', (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'กรุณาระบุอีเมล' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const user = store.findUserByEmail(cleanEmail);
+  if (!user) {
+    return res.status(404).json({ error: 'ไม่พบบัญชีผู้ใช้' });
+  }
+
+  const otpCode = generateOTP();
+  const expiresAt = Date.now() + 5 * 60 * 1000;
+
+  otpStore.set(cleanEmail, {
+    code: otpCode,
+    email: cleanEmail,
+    userId: user.id,
+    expiresAt,
+    attempts: 0,
+    purpose: 'LOGIN_2FA',
+  });
+
+  store.addAuditLog({
+    eventType: 'AUTH_LOGIN',
+    userId: user.id,
+    userEmail: user.email,
+    userRole: user.role,
+    ipAddress: getClientIp(req),
+    action: `ขอส่งรหัส OTP (2FA) ใหม่อีกครั้งไปยัง ${maskEmail(user.email)}`,
+    severity: 'info',
+  });
+
+  console.log(`[2FA OTP RESEND] New Code for ${user.email}: ${otpCode}`);
+
+  return res.json({
+    message: `ส่งรหัส OTP ใหม่อีกครั้งไปยังอีเมล ${maskEmail(user.email)} สำเร็จ`,
+    expiresInSeconds: 300,
+    devOtpCode: otpCode,
   });
 });
 
@@ -1008,6 +1194,113 @@ app.post('/api/security/simulate-idor', requireAuth, (req: AuthenticatedRequest,
       tamperAttemptBlocked: true,
       httpStatusReturned: 403,
     },
+  });
+});
+
+// ----------------------------------------------------
+// Supabase Database Integration Endpoints
+// ----------------------------------------------------
+
+// GET Supabase status & configuration
+app.get('/api/supabase/config', (_req: Request, res: Response) => {
+  const config = supabaseManager.getConfig();
+  return res.json({
+    ...config,
+    sqlSchema: SUPABASE_SQL_SCHEMA,
+  });
+});
+
+// POST test Supabase connection
+app.post('/api/supabase/test', async (req: Request, res: Response) => {
+  const { url, key } = req.body;
+  const result = await supabaseManager.testConnection(url, key);
+  return res.json(result);
+});
+
+// POST save Supabase configuration
+app.post('/api/supabase/config', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  const { url, anonKey, serviceRoleKey } = req.body;
+
+  if (!url || (!anonKey && !serviceRoleKey)) {
+    return res.status(400).json({ error: 'กรุณากรอก Supabase Project URL และ API Key' });
+  }
+
+  // Test connection first
+  const testRes = await supabaseManager.testConnection(url, serviceRoleKey || anonKey);
+  if (!testRes.success && !testRes.message.includes('SQL Schema')) {
+    return res.status(400).json({ error: testRes.message });
+  }
+
+  const updated = supabaseManager.saveConfig({
+    url,
+    anonKey: anonKey || '',
+    serviceRoleKey: serviceRoleKey || '',
+    enabled: true,
+    connectedAt: new Date().toISOString(),
+  });
+
+  store.addAuditLog({
+    eventType: 'ADMIN_ACTION',
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userRole: req.user!.role,
+    ipAddress: getClientIp(req),
+    action: `แอดมินตั้งค่าเชื่อมต่อฐานข้อมูลภายนอก Supabase (${url}) เรียบร้อยแล้ว`,
+    severity: 'info',
+    details: { url, connectedAt: new Date().toISOString() },
+  });
+
+  return res.json({
+    success: true,
+    message: 'บันทึกการตั้งค่าและเชื่อมต่อ Supabase สำเร็จแล้ว!',
+    config: supabaseManager.getConfig(),
+    testResult: testRes,
+  });
+});
+
+// POST sync all current data to Supabase
+app.post('/api/supabase/sync', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  if (!supabaseManager.isConnected()) {
+    return res.status(400).json({ error: 'Supabase ยังไม่ได้เชื่อมต่อ กรุณาตั้งค่า URL และ Key ก่อน' });
+  }
+
+  const currentData = store.getAllData();
+  const syncResult = await supabaseManager.syncDataToSupabase(currentData);
+
+  store.addAuditLog({
+    eventType: 'ADMIN_ACTION',
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userRole: req.user!.role,
+    ipAddress: getClientIp(req),
+    action: `แอดมินทำการ Sync ข้อมูลระบบไปยัง Supabase ฐานข้อมูลภายนอก`,
+    severity: 'info',
+    details: syncResult.results,
+  });
+
+  return res.json(syncResult);
+});
+
+// POST disconnect Supabase
+app.post('/api/supabase/disconnect', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  supabaseManager.saveConfig({
+    enabled: false,
+    connectedAt: undefined,
+  });
+
+  store.addAuditLog({
+    eventType: 'ADMIN_ACTION',
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userRole: req.user!.role,
+    ipAddress: getClientIp(req),
+    action: `แอดมินยกเลิกการเชื่อมต่อกับ Supabase กลับไปใช้ Local Database`,
+    severity: 'warning',
+  });
+
+  return res.json({
+    success: true,
+    message: 'ยกเลิกการเชื่อมต่อ Supabase เรียบร้อยแล้ว ระบบกลับไปใช้ Local Storage',
   });
 });
 

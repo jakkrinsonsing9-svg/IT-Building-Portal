@@ -11,16 +11,18 @@ import {
   X,
   Eye,
   EyeOff,
-  ChevronDown
+  ChevronDown,
+  Database
 } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: 'hero' | 'rooms' | 'equipment' | 'my-records' | 'analytics' | 'owasp' | 'admin';
   setActiveTab: (tab: 'hero' | 'rooms' | 'equipment' | 'my-records' | 'analytics' | 'owasp' | 'admin') => void;
   openAuthModal: () => void;
+  openSupabaseModal: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAuthModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAuthModal, openSupabaseModal }) => {
   const { user, logout, switchDemoAccount, unmaskedPII, toggleUnmaskPII } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -101,6 +103,16 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
 
         {/* Zone 3: 1 primary action or user control */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Supabase Cloud DB Button */}
+          <button
+            onClick={openSupabaseModal}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 text-xs text-emerald-300 transition-colors shadow-sm cursor-pointer"
+            title="เชื่อมต่อฐานข้อมูล Supabase PostgreSQL (ฟรี)"
+          >
+            <Database className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline font-medium">Supabase DB</span>
+          </button>
+
           {user ? (
             <div className="flex items-center gap-2">
               {/* User profile dropdown trigger */}
@@ -288,6 +300,16 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
               หน้าผู้ดูแลระบบ (Admin)
             </button>
           )}
+          <button
+            onClick={() => {
+              openSupabaseModal();
+              setMobileMenuOpen(false);
+            }}
+            className="w-full text-left py-2 px-3 rounded bg-emerald-950/40 border border-emerald-500/30 text-sm text-emerald-300 flex items-center gap-2"
+          >
+            <Database className="w-4 h-4 text-emerald-400" />
+            <span>เชื่อมต่อฐานข้อมูล Supabase (ฟรี 100%)</span>
+          </button>
         </div>
       )}
     </header>

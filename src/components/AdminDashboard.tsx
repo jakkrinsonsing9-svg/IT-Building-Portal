@@ -16,10 +16,15 @@ import {
   Eye,
   RefreshCw,
   Search,
-  Filter
+  Filter,
+  Database
 } from 'lucide-react';
 
-export const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  onOpenSupabaseModal?: () => void;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseModal }) => {
   const { user, token } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
@@ -231,13 +236,26 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={fetchAdminData}
-          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 glass-card hover:bg-white/10 flex items-center gap-2 border border-white/10 cursor-pointer self-start md:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>รีเฟรชข้อมูล</span>
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
+          {onOpenSupabaseModal && (
+            <button
+              onClick={onOpenSupabaseModal}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 flex items-center gap-2 border border-emerald-500/40 cursor-pointer shadow-sm"
+              title="ตั้งค่าเชื่อมต่อฐานข้อมูล Supabase PostgreSQL (ฟรี)"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              <span>ฐานข้อมูล Supabase</span>
+            </button>
+          )}
+
+          <button
+            onClick={fetchAdminData}
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 glass-card hover:bg-white/10 flex items-center gap-2 border border-white/10 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>รีเฟรชข้อมูล</span>
+          </button>
+        </div>
       </div>
 
       {message && (

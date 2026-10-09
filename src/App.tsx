@@ -9,6 +9,7 @@ import { OWASPSecurityCenter } from './components/OWASPSecurityCenter.tsx';
 import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
+import { SupabaseModal } from './components/SupabaseModal.tsx';
 import {
   ShieldCheck,
   Building2,
@@ -30,6 +31,7 @@ function AppContent() {
     'hero' | 'rooms' | 'equipment' | 'my-records' | 'analytics' | 'owasp' | 'admin'
   >('hero');
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const triggerRefresh = () => {
@@ -50,6 +52,7 @@ function AppContent() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         openAuthModal={() => setAuthModalOpen(true)}
+        openSupabaseModal={() => setSupabaseModalOpen(true)}
       />
 
       {/* App Content Container */}
@@ -130,7 +133,9 @@ function AppContent() {
 
         {activeTab === 'owasp' && <OWASPSecurityCenter />}
 
-        {activeTab === 'admin' && <AdminDashboard />}
+        {activeTab === 'admin' && (
+          <AdminDashboard onOpenSupabaseModal={() => setSupabaseModalOpen(true)} />
+        )}
       </main>
 
       {/* Footer */}
@@ -153,6 +158,9 @@ function AppContent() {
 
       {/* Auth Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+
+      {/* Supabase Database Integration Modal */}
+      <SupabaseModal isOpen={supabaseModalOpen} onClose={() => setSupabaseModalOpen(false)} />
     </div>
   );
 }
