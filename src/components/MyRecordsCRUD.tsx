@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { RoomBooking, EquipmentRequest } from '../types/index.ts';
+import { clientStorage } from '../services/clientStorage.ts';
 import {
   Calendar,
   Clock,
@@ -17,15 +18,21 @@ import {
   X,
   Eye,
   EyeOff,
-  Flame
+  Flame,
+  Star,
 } from 'lucide-react';
 
 interface MyRecordsCRUDProps {
   openAuthModal: () => void;
   refreshTrigger: number;
+  onOpenFeedback?: (target: { type: 'room' | 'equipment' | 'overall'; id?: string; name: string }) => void;
 }
 
-export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, refreshTrigger }) => {
+export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({
+  openAuthModal,
+  refreshTrigger,
+  onOpenFeedback,
+}) => {
   const { user, token } = useAuth();
   const [activeTab, setActiveTab] = useState<'bookings' | 'equipment'>('bookings');
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
@@ -60,25 +67,35 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
       return;
     }
     setLoading(true);
+    let loadedRemote = false;
     try {
       const [resB, resE] = await Promise.all([
         fetch('/api/bookings', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/equipment-requests', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
-      if (resB.ok) {
+      const typeB = resB.headers.get('content-type') || '';
+      const typeE = resE.headers.get('content-type') || '';
+
+      if (resB.ok && typeB.includes('application/json')) {
         const dataB = await resB.json();
         setBookings(dataB.bookings);
+        loadedRemote = true;
       }
-      if (resE.ok) {
+      if (resE.ok && typeE.includes('application/json')) {
         const dataE = await resE.json();
         setEquipmentRequests(dataE.requests);
+        loadedRemote = true;
       }
     } catch (err) {
-      console.error('Failed to load records', err);
-    } finally {
-      setLoading(false);
+      console.warn('Backend unavailable, loading user records from clientStorage fallback:', err);
     }
+
+    if (!loadedRemote) {
+      setBookings(clientStorage.getBookings(user));
+      setEquipmentRequests(clientStorage.getEquipmentRequests(user));
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -96,7 +113,7 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
 
   const handleSaveBookingEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingBooking || !token) return;
+    if (!editingBooking || !token || !user) return;
 
     try {
       const res = await fetch(`/api/bookings/${editingBooking.id}`, {
@@ -114,21 +131,44 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาดในการแก้ไข' });
-      } else {
-        setMessage({ type: 'success', text: 'บันทึกการแก้ไขข้อมูลการจองสำเร็จ' });
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาดในการแก้ไข' });
+        } else {
+          setMessage({ type: 'success', text: 'บันทึกการแก้ไขข้อมูลการจองสำเร็จ' });
+          setEditingBooking(null);
+          fetchData();
+        }
+        return;
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch {
+      // Local fallback
+      const localRes = clientStorage.updateBooking(
+        editingBooking.id,
+        {
+          date: editDate,
+          startTime: editStartTime,
+          endTime: editEndTime,
+          purpose: editPurpose,
+          attendeesCount: editAttendees,
+        },
+        user
+      );
+      if (localRes.success) {
+        setMessage({ type: 'success', text: 'บันทึกการแก้ไขข้อมูลการจองสำเร็จ (Local Secured)' });
         setEditingBooking(null);
         fetchData();
+      } else {
+        setMessage({ type: 'error', text: localRes.error || 'เกิดข้อผิดพลาดในการแก้ไข' });
       }
-    } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
     }
   };
 
   const handleDeleteBooking = async (id: string) => {
-    if (!token) return;
+    if (!token || !user) return;
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิก/ลบรายการจองนี้?')) return;
 
     try {
@@ -137,15 +177,26 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'ไม่สามารถลบรายการได้' });
-      } else {
-        setMessage({ type: 'success', text: 'ยกเลิกรายการจองเรียบร้อยแล้ว' });
-        fetchData();
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage({ type: 'error', text: data.error || 'ไม่สามารถลบรายการได้' });
+        } else {
+          setMessage({ type: 'success', text: 'ยกเลิกรายการจองเรียบร้อยแล้ว' });
+          fetchData();
+        }
+        return;
       }
+      throw new Error(`Non-JSON response: ${res.status}`);
     } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      const localRes = clientStorage.deleteBooking(id, user);
+      if (localRes.success) {
+        setMessage({ type: 'success', text: 'ยกเลิกรายการจองเรียบร้อยแล้ว (Local Secured)' });
+        fetchData();
+      } else {
+        setMessage({ type: 'error', text: localRes.error || 'ไม่สามารถลบรายการได้' });
+      }
     }
   };
 
@@ -159,7 +210,7 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
 
   const handleSaveEqEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingEqReq || !token) return;
+    if (!editingEqReq || !token || !user) return;
 
     try {
       const res = await fetch(`/api/equipment-requests/${editingEqReq.id}`, {
@@ -176,21 +227,42 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาดในการแก้ไข' });
-      } else {
-        setMessage({ type: 'success', text: 'บันทึกการแก้ไขคำขอยืมอุปกรณ์สำเร็จ' });
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาดในการแก้ไข' });
+        } else {
+          setMessage({ type: 'success', text: 'บันทึกการแก้ไขคำขอยืมอุปกรณ์สำเร็จ' });
+          setEditingEqReq(null);
+          fetchData();
+        }
+        return;
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch {
+      const localRes = clientStorage.updateEquipmentRequest(
+        editingEqReq.id,
+        {
+          borrowDate: editBorrowDate,
+          expectedReturnDate: editReturnDate,
+          usageLocation: editLocation,
+          projectPurpose: editEqPurpose,
+        },
+        user
+      );
+      if (localRes.success) {
+        setMessage({ type: 'success', text: 'บันทึกการแก้ไขคำขอยืมอุปกรณ์สำเร็จ (Local Secured)' });
         setEditingEqReq(null);
         fetchData();
+      } else {
+        setMessage({ type: 'error', text: localRes.error || 'เกิดข้อผิดพลาดในการแก้ไข' });
       }
-    } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
     }
   };
 
   const handleDeleteEq = async (id: string) => {
-    if (!token) return;
+    if (!token || !user) return;
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคำขอยืมอุปกรณ์นี้?')) return;
 
     try {
@@ -199,15 +271,26 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'ไม่สามารถยกเลิกคำขอได้' });
-      } else {
-        setMessage({ type: 'success', text: 'ยกเลิกคำขอยืมอุปกรณ์และคืนสต็อกเรียบร้อย' });
-        fetchData();
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage({ type: 'error', text: data.error || 'ไม่สามารถยกเลิกคำขอได้' });
+        } else {
+          setMessage({ type: 'success', text: 'ยกเลิกคำขอยืมอุปกรณ์และคืนสต็อกเรียบร้อย' });
+          fetchData();
+        }
+        return;
       }
+      throw new Error(`Non-JSON response: ${res.status}`);
     } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      const localRes = clientStorage.deleteEquipmentRequest(id, user);
+      if (localRes.success) {
+        setMessage({ type: 'success', text: 'ยกเลิกคำขอยืมอุปกรณ์เรียบร้อย (Local Secured)' });
+        fetchData();
+      } else {
+        setMessage({ type: 'error', text: localRes.error || 'ไม่สามารถยกเลิกคำขอได้' });
+      }
     }
   };
 
@@ -275,11 +358,11 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
           </p>
         </div>
 
-        {/* Live IDOR Attack simulation trigger */}
+        {/* Live IDOR Attack simulation trigger - ซ่อนไว้ตามคำขอของผู้ใช้งาน */}
         <button
           onClick={handleSimulateIDOR}
           disabled={isSimulatingIdor}
-          className="px-4 py-2.5 rounded-xl text-xs font-semibold text-amber-200 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 flex items-center gap-2 shadow-lg shadow-amber-500/10 cursor-pointer transition-all self-start md:self-auto"
+          className="hidden px-4 py-2.5 rounded-xl text-xs font-semibold text-amber-200 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 items-center gap-2 shadow-lg shadow-amber-500/10 cursor-pointer transition-all self-start md:self-auto"
         >
           <Flame className="w-4 h-4 text-amber-400" />
           <span>{isSimulatingIdor ? 'กำลังทดสอบ...' : '⚡ ทดสอบเจาะระบบ IDOR (จำลองแฮกข้อมูลผู้อื่น)'}</span>
@@ -487,6 +570,18 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
                     </span>
 
                     <div className="flex items-center gap-2">
+                      {onOpenFeedback && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenFeedback({ type: 'room', id: b.roomId, name: b.roomName })}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-400/30 transition-colors cursor-pointer"
+                          title="ให้คะแนนและประเมินความพึงพอใจการใช้ห้องนี้"
+                        >
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span>ประเมิน</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => handleEditBookingClick(b)}
                         disabled={!canEditOrDelete}
@@ -667,6 +762,18 @@ export const MyRecordsCRUD: React.FC<MyRecordsCRUDProps> = ({ openAuthModal, ref
                     </span>
 
                     <div className="flex items-center gap-2">
+                      {onOpenFeedback && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenFeedback({ type: 'equipment', id: r.equipmentId, name: r.equipmentName })}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-400/30 transition-colors cursor-pointer"
+                          title="ให้คะแนนและประเมินความพึงพอใจการยืมอุปกรณ์นี้"
+                        >
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span>ประเมิน</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => handleEditEqClick(r)}
                         disabled={!canEditOrDelete}

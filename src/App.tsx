@@ -8,6 +8,7 @@ import { MyRecordsCRUD } from './components/MyRecordsCRUD.tsx';
 import { OWASPSecurityCenter } from './components/OWASPSecurityCenter.tsx';
 import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard.tsx';
+import { SatisfactionSection } from './components/SatisfactionSection.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
 import { SupabaseModal } from './components/SupabaseModal.tsx';
 import {
@@ -22,17 +23,23 @@ import {
   Lock,
   Eye,
   CheckCircle2,
-  BarChart3
+  BarChart3,
+  HeartHandshake
 } from 'lucide-react';
 
 function AppContent() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'hero' | 'rooms' | 'equipment' | 'my-records' | 'analytics' | 'owasp' | 'admin'
+    'hero' | 'rooms' | 'equipment' | 'my-records' | 'feedback' | 'analytics' | 'owasp' | 'admin'
   >('hero');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [feedbackTarget, setFeedbackTarget] = useState<{
+    type: 'room' | 'equipment' | 'overall';
+    id?: string;
+    name: string;
+  } | undefined>(undefined);
 
   const triggerRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -69,27 +76,12 @@ function AppContent() {
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
             <span className="text-slate-200 capitalize">
               {activeTab === 'hero' && 'ภาพรวมอาคารไอที'}
-              {activeTab === 'rooms' && 'จองห้องปฏิบัติการ (Form 1)'}
-              {activeTab === 'equipment' && 'ขอยืมของส่วนกลาง (Form 2)'}
-              {activeTab === 'my-records' && 'รายการของฉัน (CRUD & Data Ownership)'}
-              {activeTab === 'analytics' && 'แดชบอร์ดสถิติ & กราฟสรุปผล (Data Visualization)'}
-              {activeTab === 'owasp' && 'OWASP Top 10 Security Audit'}
+              {activeTab === 'rooms' && 'จองห้องปฏิบัติการ'}
+              {activeTab === 'equipment' && 'ขอยืมของส่วนกลาง'}
+              {activeTab === 'my-records' && 'รายการคำขอของฉัน'}
+              {activeTab === 'feedback' && 'ประเมินความพึงพอใจการใช้งาน (CSAT)'}
+              {activeTab === 'analytics' && 'แดชบอร์ดสถิติการใช้งาน'}
               {activeTab === 'admin' && 'ระบบผู้ดูแลระบบ (Admin)'}
-            </span>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded font-mono">
-              <ShieldCheck className="w-3 h-3" />
-              <span>OWASP Top 10 Grade A+</span>
-            </span>
-            <span className="text-slate-600">·</span>
-            <span className="inline-flex items-center gap-1 text-[11px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded font-mono">
-              <span>Bcrypt Passwords</span>
-            </span>
-            <span className="text-slate-600">·</span>
-            <span className="inline-flex items-center gap-1 text-[11px] text-indigo-400 bg-indigo-950/60 border border-indigo-800/40 px-2 py-0.5 rounded font-mono">
-              <span>PDPA PII Masked</span>
             </span>
           </div>
         </div>
@@ -126,6 +118,17 @@ function AppContent() {
           <MyRecordsCRUD
             openAuthModal={() => setAuthModalOpen(true)}
             refreshTrigger={refreshTrigger}
+            onOpenFeedback={(target) => {
+              setFeedbackTarget(target);
+              setActiveTab('feedback');
+            }}
+          />
+        )}
+
+        {activeTab === 'feedback' && (
+          <SatisfactionSection
+            openAuthModal={() => setAuthModalOpen(true)}
+            preselectedTarget={feedbackTarget}
           />
         )}
 
@@ -144,15 +147,9 @@ function AppContent() {
           <p>
             © 2026 Faculty of Information Technology · ระบบจองห้องและยืมของส่วนกลางตึกไอที
           </p>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span>Bcrypt Hashing</span>
-            <span>·</span>
-            <span>RBAC Slices</span>
-            <span>·</span>
-            <span>Resource Ownership Enforcement</span>
-            <span>·</span>
-            <span>OWASP A01-A10 Compliance</span>
-          </div>
+          <p className="text-slate-400">
+            ระบบบริการทรัพยากรส่วนกลางคณะเทคโนโลยีสารสนเทศ
+          </p>
         </div>
       </footer>
 

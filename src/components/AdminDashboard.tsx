@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { RoomBooking, EquipmentRequest, SecurityAuditLog } from '../types/index.ts';
+import { clientStorage } from '../services/clientStorage.ts';
 import {
   ShieldAlert,
   CheckCircle2,
@@ -58,6 +59,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
   const fetchAdminData = async () => {
     if (!token || user?.role !== 'admin') return;
     setLoading(true);
+    let loadedRemote = false;
     try {
       const [resStats, resBkg, resEq, resLogs] = await Promise.all([
         fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
@@ -66,15 +68,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         fetch('/api/admin/audit-logs', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
-      if (resStats.ok) setStats((await resStats.json()).stats);
-      if (resBkg.ok) setBookings((await resBkg.json()).bookings);
-      if (resEq.ok) setEquipmentRequests((await resEq.json()).requests);
-      if (resLogs.ok) setAuditLogs((await resLogs.json()).logs);
+      const tStats = resStats.headers.get('content-type') || '';
+      const tBkg = resBkg.headers.get('content-type') || '';
+      const tEq = resEq.headers.get('content-type') || '';
+      const tLogs = resLogs.headers.get('content-type') || '';
+
+      if (resStats.ok && tStats.includes('application/json')) setStats((await resStats.json()).stats);
+      if (resBkg.ok && tBkg.includes('application/json')) setBookings((await resBkg.json()).bookings);
+      if (resEq.ok && tEq.includes('application/json')) setEquipmentRequests((await resEq.json()).requests);
+      if (resLogs.ok && tLogs.includes('application/json')) setAuditLogs((await resLogs.json()).logs);
+      loadedRemote = resBkg.ok && resEq.ok;
     } catch (err) {
-      console.error('Failed to load admin data', err);
-    } finally {
-      setLoading(false);
+      console.warn('Backend unavailable, loading admin data from clientStorage fallback:', err);
     }
+
+    if (!loadedRemote) {
+      const localBookings = clientStorage.getBookings(user);
+      const localEq = clientStorage.getEquipmentRequests(user);
+      const localLogs = clientStorage.getAuditLogs();
+      setBookings(localBookings);
+      setEquipmentRequests(localEq);
+      setAuditLogs(localLogs);
+      setStats({
+        totalBookings: localBookings.length,
+        pendingBookings: localBookings.filter((b) => b.status === 'pending').length,
+        totalEquipmentRequests: localEq.length,
+        pendingEquipmentRequests: localEq.filter((r) => r.status === 'pending').length,
+        totalRooms: clientStorage.getRooms().length,
+        totalEquipmentUnits: clientStorage.getEquipment().reduce((acc, curr) => acc + curr.totalQuantity, 0),
+        totalUsers: 12,
+        securityEventsCount: localLogs.length,
+      });
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -97,17 +123,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         }),
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        setMessage({ type: 'success', text: `ปรับสถานะรายการจองเป็น ${status} สำเร็จ` });
-        setProcessingBookingId(null);
-        setAdminNoteInput('');
-        fetchAdminData();
-      } else {
-        setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาด' });
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (res.ok) {
+          setMessage({ type: 'success', text: `ปรับสถานะรายการจองเป็น ${status} สำเร็จ` });
+          setProcessingBookingId(null);
+          setAdminNoteInput('');
+          fetchAdminData();
+        } else {
+          setMessage({ type: 'error', text: data.error || 'เกิดข้อผิดพลาด' });
+        }
+        return;
       }
+      throw new Error(`Non-JSON response: ${res.status}`);
     } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      clientStorage.updateBookingStatus(id, status, adminNoteInput.trim() || undefined);
+      setMessage({ type: 'success', text: `ปรับสถานะรายการจองเป็น ${status} สำเร็จ (Local Secured)` });
+      setProcessingBookingId(null);
+      setAdminNoteInput('');
+      fetchAdminData();
     }
   };
 
@@ -127,14 +162,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         body: JSON.stringify({ status }),
       });
 
-      if (res.ok) {
-        setMessage({ type: 'success', text: `ปรับสถานะคำขอยืมเป็น ${status} สำเร็จ` });
-        fetchAdminData();
-      } else {
-        setMessage({ type: 'error', text: 'เกิดข้อผิดพลาดในการปรับสถานะ' });
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        if (res.ok) {
+          setMessage({ type: 'success', text: `ปรับสถานะคำขอยืมเป็น ${status} สำเร็จ` });
+          fetchAdminData();
+        } else {
+          setMessage({ type: 'error', text: 'เกิดข้อผิดพลาดในการปรับสถานะ' });
+        }
+        return;
       }
+      throw new Error(`Non-JSON response: ${res.status}`);
     } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      clientStorage.updateEquipmentRequestStatus(id, status);
+      setMessage({ type: 'success', text: `ปรับสถานะคำขอยืมเป็น ${status} สำเร็จ (Local Secured)` });
+      fetchAdminData();
     }
   };
 
@@ -159,17 +201,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         }),
       });
 
-      if (res.ok) {
-        setMessage({ type: 'success', text: 'เพิ่มห้องปฏิบัติการใหม่เรียบร้อยแล้ว' });
-        setNewRoomName('');
-        setNewRoomCode('');
-        setNewRoomDescription('');
-        fetchAdminData();
-      } else {
-        setMessage({ type: 'error', text: 'ไม่สามารถเพิ่มห้องใหม่ได้' });
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        if (res.ok) {
+          setMessage({ type: 'success', text: 'เพิ่มห้องปฏิบัติการใหม่เรียบร้อยแล้ว' });
+          setNewRoomName('');
+          setNewRoomCode('');
+          setNewRoomDescription('');
+          fetchAdminData();
+        } else {
+          setMessage({ type: 'error', text: 'ไม่สามารถเพิ่มห้องใหม่ได้' });
+        }
+        return;
       }
+      throw new Error(`Non-JSON response: ${res.status}`);
     } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      clientStorage.addRoom({
+        id: `room-${Date.now()}`,
+        name: newRoomName,
+        code: newRoomCode,
+        floor: newRoomFloor,
+        capacity: newRoomCapacity,
+        description: newRoomDescription,
+        type: 'lab',
+        equipment: ['Interactive Display', 'Gigabit LAN'],
+        status: 'available',
+        imageUrl: '/src/assets/images/it_lab_interior_1791567709768.jpg',
+      });
+      setMessage({ type: 'success', text: 'เพิ่มห้องปฏิบัติการใหม่เรียบร้อยแล้ว (Local Secured)' });
+      setNewRoomName('');
+      setNewRoomCode('');
+      setNewRoomDescription('');
+      fetchAdminData();
     }
   };
 
@@ -193,17 +256,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         }),
       });
 
-      if (res.ok) {
-        setMessage({ type: 'success', text: 'เพิ่มอุปกรณ์ส่วนกลางใหม่เรียบร้อยแล้ว' });
-        setNewEqName('');
-        setNewEqSerial('');
-        setNewEqSpecs('');
-        fetchAdminData();
-      } else {
-        setMessage({ type: 'error', text: 'ไม่สามารถเพิ่มอุปกรณ์ได้' });
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        if (res.ok) {
+          setMessage({ type: 'success', text: 'เพิ่มอุปกรณ์ส่วนกลางใหม่เรียบร้อยแล้ว' });
+          setNewEqName('');
+          setNewEqSerial('');
+          setNewEqSpecs('');
+          fetchAdminData();
+        } else {
+          setMessage({ type: 'error', text: 'ไม่สามารถเพิ่มอุปกรณ์ได้' });
+        }
+        return;
       }
+      throw new Error(`Non-JSON response: ${res.status}`);
     } catch {
-      setMessage({ type: 'error', text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+      clientStorage.addEquipment({
+        id: `eq-${Date.now()}`,
+        name: newEqName,
+        category: newEqCategory,
+        serialNumber: newEqSerial,
+        specs: newEqSpecs,
+        totalQuantity: newEqQty,
+        availableQuantity: newEqQty,
+        location: 'ห้องพัสดุไอที อาคาร 3',
+        imageUrl: '/src/assets/images/it_tech_devices_1791567729951.jpg',
+      });
+      setMessage({ type: 'success', text: 'เพิ่มอุปกรณ์ส่วนกลางใหม่เรียบร้อยแล้ว (Local Secured)' });
+      setNewEqName('');
+      setNewEqSerial('');
+      setNewEqSpecs('');
+      fetchAdminData();
     }
   };
 

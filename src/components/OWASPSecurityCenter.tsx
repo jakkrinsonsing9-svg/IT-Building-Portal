@@ -57,24 +57,6 @@ export const OWASPSecurityCenter: React.FC = () => {
             ระบบตรวจสอบช่องโหว่ความมั่นคงปลอดภัยแบบอัตโนมัติ ทดสอบการเจาะระบบ (IDOR, SQLi, Hashing, XSS, SSRF) และวิเคราะห์ความสอดคล้องตามมาตรฐานสากล
           </p>
         </div>
-
-        <button
-          onClick={runScan}
-          disabled={scanning}
-          className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-500/25 border border-emerald-400/40 transition-all flex items-center gap-2 cursor-pointer self-start md:self-auto"
-        >
-          {scanning ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>กำลังสแกนระบบความปลอดภัย...</span>
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4" />
-              <span>รันการตรวจสอบ OWASP Top 10 สดทันที</span>
-            </>
-          )}
-        </button>
       </div>
 
       {/* Score Overview Card */}

@@ -37,7 +37,7 @@ export interface Room {
   code: string;
   floor: number;
   capacity: number;
-  type: 'lab' | 'meeting' | 'studio' | 'makerspace';
+  type: 'lab' | 'meeting' | 'studio' | 'makerspace' | 'lounge';
   description: string;
   equipment: string[];
   status: 'available' | 'maintenance' | 'occupied';
@@ -47,7 +47,7 @@ export interface Room {
 export interface Equipment {
   id: string;
   name: string;
-  category: 'vr_ar' | 'network' | 'computing' | 'media' | 'hardware';
+  category: 'mouse' | 'keyboard' | 'gpu' | 'network' | 'media' | 'hardware' | 'computing' | 'vr_ar' | 'accessories';
   serialNumber: string;
   specs: string;
   totalQuantity: number;
@@ -151,4 +151,35 @@ export interface OWASPScanReport {
   grade: string;
   executionDurationMs: number;
   results: OWASPTestResult[];
+}
+
+export type FeedbackTargetType = 'room' | 'equipment' | 'overall';
+
+export interface SatisfactionFeedback {
+  id: string;
+  targetType: FeedbackTargetType;
+  targetId?: string;
+  targetName: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userRole: string;
+  rating: number; // 1 to 5
+  cleanlinessRating: number; // 1 to 5
+  speedRating: number; // 1 to 5
+  staffRating: number; // 1 to 5
+  comment: string;
+  issueReport?: string;
+  isAnonymous: boolean;
+  createdAt: string;
+}
+
+export interface FeedbackSummaryStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: { [star: number]: number };
+  cleanlinessAvg: number;
+  speedAvg: number;
+  staffAvg: number;
+  recommendationRate: number;
 }

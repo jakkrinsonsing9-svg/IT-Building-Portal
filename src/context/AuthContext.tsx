@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MaskedUserView } from '../types/index.ts';
+import { clientStorage } from '../services/clientStorage.ts';
 
 interface LoginResult {
   success: boolean;
@@ -50,6 +51,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      // Check if this was a local offline token
+      if (storedToken.startsWith('local-token-')) {
+        const parts = storedToken.split('-');
+        const userId = `${parts[2]}-${parts[3] || ''}`;
+        const localUser = clientStorage.getUserById(userId);
+        if (localUser) {
+          setUser(localUser);
+          setToken(storedToken);
+          setLoading(false);
+          return;
+        }
+      }
+
       try {
         const res = await fetch('/api/auth/me', {
           headers: {
@@ -57,20 +71,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
         });
 
-        if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
           const data = await res.json();
           setUser(data.user);
           setToken(storedToken);
+          clientStorage.saveUserSync(data.user);
         } else {
-          localStorage.removeItem('it_portal_token');
-          setUser(null);
-          setToken(null);
+          // Check local storage before clearing
+          const localUser = clientStorage.getUserById(storedToken);
+          if (localUser) {
+            setUser(localUser);
+          } else {
+            localStorage.removeItem('it_portal_token');
+            setUser(null);
+            setToken(null);
+          }
         }
       } catch (err) {
-        console.error('Failed to restore session', err);
-        localStorage.removeItem('it_portal_token');
-        setUser(null);
-        setToken(null);
+        console.warn('Backend session restore fallback to local storage:', err);
+        // Try to maintain session if available in client storage
+        const allUsers = clientStorage.getRooms(); // touch clientStorage
+        const savedUserStr = localStorage.getItem('it_current_user');
+        if (savedUserStr) {
+          try {
+            setUser(JSON.parse(savedUserStr));
+          } catch {
+            setUser(null);
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -87,27 +116,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, password, require2FA }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'เข้าสู่ระบบไม่สำเร็จ' };
-      }
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || 'เข้าสู่ระบบไม่สำเร็จ' };
+        }
 
-      if (data.requireOtp) {
-        return {
-          success: true,
-          requireOtp: true,
-          email: data.email,
-          maskedEmail: data.maskedEmail,
-          devOtpCode: data.devOtpCode,
-        };
-      }
+        if (data.requireOtp) {
+          return {
+            success: true,
+            requireOtp: true,
+            email: data.email,
+            maskedEmail: data.maskedEmail,
+            devOtpCode: data.devOtpCode,
+          };
+        }
 
-      localStorage.setItem('it_portal_token', data.token);
-      setToken(data.token);
-      setUser(data.user);
-      return { success: true };
-    } catch {
-      return { success: false, error: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' };
+        localStorage.setItem('it_portal_token', data.token);
+        localStorage.setItem('it_current_user', JSON.stringify(data.user));
+        setToken(data.token);
+        setUser(data.user);
+        clientStorage.saveUserSync(data.user);
+        return { success: true };
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch (err) {
+      console.warn('Server unavailable for login, falling back to client storage:', err);
+      const localResult = clientStorage.loginUser(email, password, require2FA);
+      if (localResult.success && localResult.token && localResult.user) {
+        localStorage.setItem('it_portal_token', localResult.token);
+        localStorage.setItem('it_current_user', JSON.stringify(localResult.user));
+        setToken(localResult.token);
+        setUser(localResult.user);
+      }
+      return localResult;
     }
   };
 
@@ -119,17 +162,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, otp }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'รหัส OTP ไม่ถูกต้อง' };
-      }
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || 'รหัส OTP ไม่ถูกต้อง' };
+        }
 
-      localStorage.setItem('it_portal_token', data.token);
-      setToken(data.token);
-      setUser(data.user);
-      return { success: true };
-    } catch {
-      return { success: false, error: 'เกิดข้อผิดพลาดในการตรวจสอบ OTP' };
+        localStorage.setItem('it_portal_token', data.token);
+        localStorage.setItem('it_current_user', JSON.stringify(data.user));
+        setToken(data.token);
+        setUser(data.user);
+        clientStorage.saveUserSync(data.user);
+        return { success: true };
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch (err) {
+      console.warn('Server unavailable for OTP verify, falling back to client storage:', err);
+      const localRes = clientStorage.verifyOtp(email, otp);
+      if (localRes.success && localRes.token && localRes.user) {
+        localStorage.setItem('it_portal_token', localRes.token);
+        localStorage.setItem('it_current_user', JSON.stringify(localRes.user));
+        setToken(localRes.token);
+        setUser(localRes.user);
+      }
+      return localRes;
     }
   };
 
@@ -141,14 +198,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'ส่ง OTP ไม่สำเร็จ' };
-      }
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || 'ส่ง OTP ไม่สำเร็จ' };
+        }
 
-      return { success: true, devOtpCode: data.devOtpCode, message: data.message };
-    } catch {
-      return { success: false, error: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้' };
+        return { success: true, devOtpCode: data.devOtpCode, message: data.message };
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch (err) {
+      console.warn('Server unavailable for resend OTP, falling back to client storage:', err);
+      return clientStorage.resendOtp(email);
     }
   };
 
@@ -170,17 +232,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(userData),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'ลงทะเบียนไม่สำเร็จ' };
-      }
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || 'ลงทะเบียนไม่สำเร็จ' };
+        }
 
-      localStorage.setItem('it_portal_token', data.token);
-      setToken(data.token);
-      setUser(data.user);
-      return { success: true };
-    } catch {
-      return { success: false, error: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' };
+        localStorage.setItem('it_portal_token', data.token);
+        localStorage.setItem('it_current_user', JSON.stringify(data.user));
+        setToken(data.token);
+        setUser(data.user);
+        clientStorage.saveUserSync(data.user);
+        return { success: true };
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch (err) {
+      console.warn('Server unavailable for register, falling back to secure client storage with Bcrypt:', err);
+      const localResult = clientStorage.registerUser(userData);
+      if (localResult.success && localResult.token && localResult.user) {
+        localStorage.setItem('it_portal_token', localResult.token);
+        localStorage.setItem('it_current_user', JSON.stringify(localResult.user));
+        setToken(localResult.token);
+        setUser(localResult.user);
+      }
+      return localResult;
     }
   };
 

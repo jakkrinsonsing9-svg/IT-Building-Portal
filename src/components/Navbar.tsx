@@ -12,12 +12,13 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
+  HeartHandshake,
   Database
 } from 'lucide-react';
 
 interface NavbarProps {
-  activeTab: 'hero' | 'rooms' | 'equipment' | 'my-records' | 'analytics' | 'owasp' | 'admin';
-  setActiveTab: (tab: 'hero' | 'rooms' | 'equipment' | 'my-records' | 'analytics' | 'owasp' | 'admin') => void;
+  activeTab: 'hero' | 'rooms' | 'equipment' | 'my-records' | 'feedback' | 'analytics' | 'owasp' | 'admin';
+  setActiveTab: (tab: 'hero' | 'rooms' | 'equipment' | 'my-records' | 'feedback' | 'analytics' | 'owasp' | 'admin') => void;
   openAuthModal: () => void;
   openSupabaseModal: () => void;
 }
@@ -70,13 +71,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
             รายการของฉัน
           </button>
           <button
-            onClick={() => setActiveTab('owasp')}
+            onClick={() => setActiveTab('feedback')}
             className={`whitespace-nowrap shrink-0 transition-colors hover:text-white flex items-center gap-1.5 ${
-              activeTab === 'owasp' ? 'text-emerald-400 border-b-2 border-emerald-400 pb-0.5' : ''
+              activeTab === 'feedback' ? 'text-cyan-400 border-b-2 border-cyan-400 pb-0.5' : ''
             }`}
           >
-            <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" />
-            <span>OWASP Scan</span>
+            <span>ประเมินความพึงพอใจ</span>
           </button>
           {user?.role === 'admin' && (
             <button
@@ -103,15 +103,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
 
         {/* Zone 3: 1 primary action or user control */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Supabase Cloud DB Button */}
-          <button
-            onClick={openSupabaseModal}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 text-xs text-emerald-300 transition-colors shadow-sm cursor-pointer"
-            title="เชื่อมต่อฐานข้อมูล Supabase PostgreSQL (ฟรี)"
-          >
-            <Database className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline font-medium">Supabase DB</span>
-          </button>
 
           {user ? (
             <div className="flex items-center gap-2">
@@ -269,6 +260,15 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
           >
             รายการของฉัน
           </button>
+          <button
+            onClick={() => {
+              setActiveTab('feedback');
+              setMobileMenuOpen(false);
+            }}
+            className="w-full text-left py-2 px-3 rounded hover:bg-white/5 text-sm text-cyan-300"
+          >
+            ประเมินความพึงพอใจ
+          </button>
           {user?.role === 'admin' && (
             <button
               onClick={() => {
@@ -280,15 +280,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
               สถิติ & กราฟ (Data Visualization) - Admin Only
             </button>
           )}
-          <button
-            onClick={() => {
-              setActiveTab('owasp');
-              setMobileMenuOpen(false);
-            }}
-            className="w-full text-left py-2 px-3 rounded hover:bg-white/5 text-sm text-emerald-400"
-          >
-            OWASP Top 10 Security Scan
-          </button>
           {user?.role === 'admin' && (
             <button
               onClick={() => {
@@ -300,16 +291,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
               หน้าผู้ดูแลระบบ (Admin)
             </button>
           )}
-          <button
-            onClick={() => {
-              openSupabaseModal();
-              setMobileMenuOpen(false);
-            }}
-            className="w-full text-left py-2 px-3 rounded bg-emerald-950/40 border border-emerald-500/30 text-sm text-emerald-300 flex items-center gap-2"
-          >
-            <Database className="w-4 h-4 text-emerald-400" />
-            <span>เชื่อมต่อฐานข้อมูล Supabase (ฟรี 100%)</span>
-          </button>
         </div>
       )}
     </header>

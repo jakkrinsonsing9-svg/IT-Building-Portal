@@ -1,9 +1,9 @@
 import React from 'react';
-import { Sparkles, CalendarCheck2, ShieldCheck, ArrowRight, Laptop, Cpu, Server, Eye, TrendingUp } from 'lucide-react';
+import { Sparkles, CalendarCheck2, ShieldCheck, ArrowRight, Laptop, Cpu, Server, Eye, TrendingUp, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 
 interface HeroSectionProps {
-  onNavigate: (tab: 'rooms' | 'equipment' | 'my-records' | 'analytics' | 'owasp' | 'admin') => void;
+  onNavigate: (tab: 'rooms' | 'equipment' | 'my-records' | 'feedback' | 'analytics' | 'owasp' | 'admin') => void;
   openAuthModal: () => void;
 }
 
@@ -31,7 +31,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
             </h1>
 
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
-              ศูนย์กลางการขอใช้ห้อง AI Lab, Cyber Security Lab, VR Studio และยืมอุปกรณ์ IT สมรรถนะสูง ปลอดภัยด้วยระบบสิทธิ์ตามบทบาท (RBAC), Data Masking และผ่านการทดสอบ OWASP Top 10
+              ศูนย์กลางการขอใช้ห้อง Cybersecurity Lab, Network Lab, Studio, ห้องนั่งเล่น 4 ห้อง และยืมอุปกรณ์ IT ส่วนกลาง (Mouse, Keyboard, การ์ดจอ, สายแลน, กล้องและอุปกรณ์เสริม) ปลอดภัยด้วยระบบสิทธิ์ตามบทบาท (RBAC) และ Data Masking
             </p>
 
             {/* CTA Buttons */}
@@ -41,7 +41,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
                 className="px-5 py-2.5 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/25 border border-cyan-400/40 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <CalendarCheck2 className="w-4 h-4" />
-                <span>จองห้องปฏิบัติการ (Form 1)</span>
+                <span>จองห้องปฏิบัติการ</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
@@ -50,7 +50,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
                 className="px-5 py-2.5 rounded-xl font-semibold text-xs text-cyan-200 glass-card hover:bg-white/10 border border-cyan-500/30 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Laptop className="w-4 h-4 text-cyan-400" />
-                <span>ขอยืมของส่วนกลาง (Form 2)</span>
+                <span>ขอยืมของส่วนกลาง</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('feedback')}
+                className="px-4 py-2.5 rounded-xl font-medium text-xs text-amber-200 glass-card hover:bg-amber-500/15 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <span>ประเมินความพึงพอใจ</span>
               </button>
 
               {user?.role === 'admin' && (
@@ -106,7 +114,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
               <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl backdrop-blur-md bg-slate-950/70 border border-white/10 text-xs">
                 <p className="font-semibold text-white">Faculty of Information Technology Building</p>
                 <p className="text-slate-400 text-[11px] mt-0.5">
-                  อาคาร 5 ชั้น · รองรับงานวิจัย AI, Cyber Security, Cloud Infrastructure และ VR Production
+                  อาคาร 5 ชั้น · Cybersecurity Lab, Network Lab, Digital Studio, ห้องนั่งเล่น 4 โซน และ AI Lab
                 </p>
               </div>
             </div>
@@ -121,10 +129,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
             <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center">
               <Cpu className="w-4 h-4" />
             </div>
-            <h3 className="text-sm font-semibold text-white">5 ห้องปฏิบัติการ</h3>
+            <h3 className="text-sm font-semibold text-white">ห้องแล็บ & ห้องนั่งเล่น</h3>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
-            AI Lab, Cyber CTF Lab, Studio 202, Innovation Suite, Maker Space พร้อมเครื่องมือทันสมัย
+            Cybersecurity Lab, Network Lab, Studio, ห้องนั่งเล่น 4 ห้อง และ AI Innovation Lab
           </p>
         </div>
 
@@ -136,7 +144,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
             <h3 className="text-sm font-semibold text-white">อุปกรณ์ไอทีส่วนกลาง</h3>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Meta Quest 3 VR, MacBook M3 Max, RTX 4090 eGPU, Cisco Enterprise Switch และชุด Cinema FX3
+            Mouse, Keyboard, การ์ดจอ RTX 4080/4070Ti, สายแลน Cat6/Cat7, กล้อง 4K และอุปกรณ์เสริม
           </p>
         </div>
 

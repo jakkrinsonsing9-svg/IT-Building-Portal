@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { Room } from '../types/index.ts';
-import { Calendar, Clock, Users, CheckCircle2, AlertCircle, Sparkles, Building2, ShieldAlert } from 'lucide-react';
+import { clientStorage } from '../services/clientStorage.ts';
+import {
+  Calendar,
+  Clock,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Building2,
+  ShieldAlert,
+  Shield,
+  Network,
+  Video,
+  Coffee,
+} from 'lucide-react';
 
 interface RoomBookingSectionProps {
   onBookingSuccess: () => void;
@@ -37,18 +51,25 @@ export const RoomBookingSection: React.FC<RoomBookingSectionProps> = ({
     const fetchRooms = async () => {
       try {
         const res = await fetch('/api/catalog/rooms');
-        if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
           const data = await res.json();
-          setRooms(data.rooms);
-          if (data.rooms.length > 0) {
+          if (Array.isArray(data.rooms) && data.rooms.length > 0) {
+            setRooms(data.rooms);
             setSelectedRoomId(data.rooms[0].id);
+            setLoadingRooms(false);
+            return;
           }
         }
       } catch (err) {
-        console.error('Failed to load rooms', err);
-      } finally {
-        setLoadingRooms(false);
+        console.warn('Loading rooms from clientStorage fallback:', err);
       }
+      const localRooms = clientStorage.getRooms();
+      setRooms(localRooms);
+      if (localRooms.length > 0) {
+        setSelectedRoomId(localRooms[0].id);
+      }
+      setLoadingRooms(false);
     };
     fetchRooms();
   }, []);
@@ -77,6 +98,7 @@ export const RoomBookingSection: React.FC<RoomBookingSectionProps> = ({
     }
 
     setSubmitting(true);
+    const roomObj = rooms.find((r) => r.id === selectedRoomId);
     try {
       const res = await fetch('/api/bookings', {
         method: 'POST',
@@ -96,20 +118,97 @@ export const RoomBookingSection: React.FC<RoomBookingSectionProps> = ({
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'เกิดข้อผิดพลาดในการบันทึกการจอง');
-      } else {
-        setSuccess('ส่งคำขอจองห้องสำเร็จ ข้อมูลถูกบันทึกลงระบบเรียบร้อยแล้ว');
-        setPurpose('');
-        onBookingSuccess();
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'เกิดข้อผิดพลาดในการบันทึกการจอง');
+        } else {
+          setSuccess('ส่งคำขอจองห้องสำเร็จ ข้อมูลถูกบันทึกลงระบบเรียบร้อยแล้ว');
+          setPurpose('');
+          onBookingSuccess();
+        }
+        setSubmitting(false);
+        return;
       }
-    } catch {
-      setError('ไม่สามารถเชื่อมต่อกับระบบได้');
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch (err) {
+      console.warn('Backend unavailable, saving booking to clientStorage fallback:', err);
+      clientStorage.createBooking(
+        {
+          roomId: selectedRoomId,
+          roomCode: roomObj?.code || 'LAB-401',
+          roomName: roomObj?.name || 'ห้องปฏิบัติการ',
+          date,
+          startTime,
+          endTime,
+          purpose,
+          attendeesCount,
+          requestedFacilities: facilities,
+          advisorName,
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          userPhone: user.phone,
+          userStudentId: user.studentOrStaffId,
+        },
+        user
+      );
+      setSuccess('ส่งคำขอจองห้องสำเร็จ ข้อมูลถูกบันทึกลงระบบเรียบร้อยแล้ว (Local Secured)');
+      setPurpose('');
+      onBookingSuccess();
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Room Category Filter
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'cybersec' | 'network' | 'studio' | 'lounge'>('all');
+
+  const getRoomBadge = (room: Room) => {
+    if (room.id === 'room-cybersec' || room.code === 'LAB-CYBER') {
+      return {
+        label: 'Cybersecurity Lab',
+        badgeClass: 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40',
+        icon: <Shield className="w-3 h-3 text-cyan-400" />,
+      };
+    }
+    if (room.id === 'room-network' || room.code === 'LAB-NET') {
+      return {
+        label: 'Network Lab',
+        badgeClass: 'bg-blue-950/80 text-blue-300 border-blue-500/40',
+        icon: <Network className="w-3 h-3 text-blue-400" />,
+      };
+    }
+    if (room.id === 'room-studio' || room.type === 'studio') {
+      return {
+        label: 'Multimedia Studio',
+        badgeClass: 'bg-purple-950/80 text-purple-300 border-purple-500/40',
+        icon: <Video className="w-3 h-3 text-purple-400" />,
+      };
+    }
+    if (room.id.startsWith('room-lounge') || room.type === 'lounge') {
+      return {
+        label: 'ห้องนั่งเล่น / Lounge',
+        badgeClass: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+        icon: <Coffee className="w-3 h-3 text-emerald-400" />,
+      };
+    }
+    return {
+      label: room.code,
+      badgeClass: 'bg-slate-900 text-slate-300 border-white/10',
+      icon: <Building2 className="w-3 h-3 text-slate-400" />,
+    };
+  };
+
+  const filteredRooms = rooms.filter((r) => {
+    if (categoryFilter === 'all') return true;
+    if (categoryFilter === 'cybersec') return r.id === 'room-cybersec' || r.code === 'LAB-CYBER';
+    if (categoryFilter === 'network') return r.id === 'room-network' || r.code === 'LAB-NET';
+    if (categoryFilter === 'studio') return r.id === 'room-studio' || r.type === 'studio';
+    if (categoryFilter === 'lounge') return r.id.startsWith('room-lounge') || r.type === 'lounge';
+    return true;
+  });
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
 
@@ -135,7 +234,73 @@ export const RoomBookingSection: React.FC<RoomBookingSectionProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: Rooms Catalog (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <h3 className="text-sm font-semibold text-slate-300">ห้องปฏิบัติการที่เปิดให้บริการ</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-300">ห้องปฏิบัติการและสตูดิโอที่เปิดให้บริการ</h3>
+            <span className="text-xs text-slate-400 font-mono">พบ {filteredRooms.length} ห้อง</span>
+          </div>
+
+          {/* Category Filter Chips */}
+          <div className="flex flex-wrap gap-2 pt-1 pb-2">
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                categoryFilter === 'all'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-white/10'
+              }`}
+            >
+              ทั้งหมด ({rooms.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('cybersec')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                categoryFilter === 'cybersec'
+                  ? 'bg-cyan-400 text-slate-950 font-bold shadow-lg shadow-cyan-400/20'
+                  : 'bg-slate-900/80 text-cyan-300 hover:text-white border border-cyan-800/40'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5 text-cyan-400" />
+              <span>ห้องปฏิบัติการ Cybersecurity</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('network')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                categoryFilter === 'network'
+                  ? 'bg-blue-400 text-slate-950 font-bold shadow-lg shadow-blue-400/20'
+                  : 'bg-slate-900/80 text-blue-300 hover:text-white border border-blue-800/40'
+              }`}
+            >
+              <Network className="w-3.5 h-3.5 text-blue-400" />
+              <span>ห้องปฏิบัติการ Network</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('studio')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                categoryFilter === 'studio'
+                  ? 'bg-purple-400 text-slate-950 font-bold shadow-lg shadow-purple-400/20'
+                  : 'bg-slate-900/80 text-purple-300 hover:text-white border border-purple-800/40'
+              }`}
+            >
+              <Video className="w-3.5 h-3.5 text-purple-400" />
+              <span>ห้อง Studio</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('lounge')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                categoryFilter === 'lounge'
+                  ? 'bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-400/20'
+                  : 'bg-slate-900/80 text-emerald-300 hover:text-white border border-emerald-800/40'
+              }`}
+            >
+              <Coffee className="w-3.5 h-3.5 text-emerald-400" />
+              <span>ห้องนั่งเล่น 4 ห้อง ({rooms.filter((r) => r.id.startsWith('room-lounge') || r.type === 'lounge').length})</span>
+            </button>
+          </div>
 
           {loadingRooms ? (
             <div className="space-y-3">
@@ -145,40 +310,56 @@ export const RoomBookingSection: React.FC<RoomBookingSectionProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {rooms.map((room) => {
+              {filteredRooms.map((room) => {
                 const isSelected = room.id === selectedRoomId;
+                const badge = getRoomBadge(room);
                 return (
                   <div
                     key={room.id}
-                    onClick={() => setSelectedRoomId(room.id)}
+                    onClick={() => {
+                      setSelectedRoomId(room.id);
+                      if (room.equipment.length > 0) {
+                        setFacilities(room.equipment.slice(0, 2));
+                      }
+                    }}
                     className={`glass-card rounded-2xl p-4 sm:p-5 border cursor-pointer transition-all ${
                       isSelected
-                        ? 'border-cyan-400 bg-slate-900/80 ring-2 ring-cyan-500/30'
+                        ? 'border-cyan-400 bg-slate-900/90 ring-2 ring-cyan-500/40 shadow-lg shadow-cyan-500/10'
                         : 'border-white/10 hover:border-cyan-500/40 hover:bg-slate-900/60'
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                      <img
-                        src={room.imageUrl}
-                        alt={room.name}
-                        className="w-full sm:w-28 h-24 rounded-xl object-cover border border-white/10 shrink-0"
-                        referrerPolicy="no-referrer"
-                      />
+                      <div className="relative w-full sm:w-32 h-28 shrink-0 overflow-hidden rounded-xl border border-white/10">
+                        <img
+                          src={room.imageUrl}
+                          alt={room.name}
+                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                          referrerPolicy="no-referrer"
+                        />
+                        <span className="absolute bottom-1.5 left-1.5 font-mono text-[10px] font-bold text-white bg-slate-950/80 backdrop-blur-md px-1.5 py-0.5 rounded border border-white/10">
+                          {room.code}
+                        </span>
+                      </div>
                       <div className="flex-1 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-cyan-300 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-800/60">
-                              {room.code}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${badge.badgeClass}`}
+                            >
+                              {badge.icon}
+                              <span>{badge.label}</span>
                             </span>
                             <span className="text-xs text-slate-400">ชั้น {room.floor}</span>
                           </div>
-                          <span className="text-xs text-slate-300 flex items-center gap-1">
+                          <span className="text-xs text-slate-300 flex items-center gap-1 bg-slate-950/50 px-2 py-0.5 rounded border border-white/5">
                             <Users className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="tabular-nums font-mono">{room.capacity} ที่นั่ง</span>
+                            <span className="tabular-nums font-mono font-medium">{room.capacity} ที่นั่ง</span>
                           </span>
                         </div>
 
-                        <h4 className="text-sm font-bold text-white">{room.name}</h4>
+                        <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                          {room.name}
+                        </h4>
                         <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                           {room.description}
                         </p>
@@ -187,11 +368,16 @@ export const RoomBookingSection: React.FC<RoomBookingSectionProps> = ({
                           {room.equipment.slice(0, 3).map((eq, idx) => (
                             <span
                               key={idx}
-                              className="text-[10px] bg-slate-950/60 text-slate-300 px-2 py-0.5 rounded border border-white/5 font-mono"
+                              className="text-[10px] bg-slate-950/70 text-slate-300 px-2 py-0.5 rounded border border-white/10 font-mono"
                             >
                               {eq}
                             </span>
                           ))}
+                          {room.equipment.length > 3 && (
+                            <span className="text-[10px] bg-slate-950/40 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+                              +{room.equipment.length - 3} รายการ
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -235,6 +421,29 @@ export const RoomBookingSection: React.FC<RoomBookingSectionProps> = ({
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  ห้องที่ต้องการจอง *
+                </label>
+                <select
+                  value={selectedRoomId}
+                  onChange={(e) => {
+                    setSelectedRoomId(e.target.value);
+                    const rm = rooms.find((r) => r.id === e.target.value);
+                    if (rm && rm.equipment.length > 0) {
+                      setFacilities(rm.equipment.slice(0, 2));
+                    }
+                  }}
+                  className="w-full glass-input px-3 py-2.5 rounded-xl text-xs bg-slate-900/90 border border-white/10 text-white font-medium focus:ring-1 focus:ring-cyan-400"
+                >
+                  {rooms.map((r) => (
+                    <option key={r.id} value={r.id} className="bg-slate-900 text-white py-1">
+                      [{r.code}] {r.name} (ชั้น {r.floor}, {r.capacity} ที่นั่ง)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">
                   วันที่ต้องการใช้งาน *

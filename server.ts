@@ -16,11 +16,16 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const AUTH_SECRET = process.env.AUTH_SECRET || 'it_building_portal_super_secure_auth_secret_2026';
 
-// Security Headers (OWASP A05: Security Misconfiguration prevention)
+// CORS and Security Headers
 app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   next();
 });
 
@@ -336,7 +341,7 @@ app.post('/api/auth/verify-otp', (req: Request, res: Response) => {
       userEmail: cleanEmail,
       ipAddress: getClientIp(req),
       action: `OTP ถูกระงับเนื่องจากกรอกผิดเกิน 5 ครั้ง: ${cleanEmail}`,
-      severity: 'error',
+      severity: 'critical',
     });
     return res.status(429).json({ error: 'กรอกรหัส OTP ผิดเกิน 5 ครั้ง บัญชีถูกระงับชั่วคราว กรุณาขอรหัสใหม่' });
   }
@@ -473,6 +478,103 @@ app.get('/api/catalog/rooms', (_req: Request, res: Response) => {
 
 app.get('/api/catalog/equipment', (_req: Request, res: Response) => {
   return res.json({ equipment: store.getEquipment() });
+});
+
+// ----------------------------------------------------
+// Feedback & Satisfaction System (ระบบประเมินความพึงพอใจ)
+// ----------------------------------------------------
+app.get('/api/feedback', (_req: Request, res: Response) => {
+  const feedbacks = store.getFeedbacks();
+  const stats = store.getFeedbackStats();
+  return res.json({ feedbacks, stats });
+});
+
+app.get('/api/feedback/stats', (_req: Request, res: Response) => {
+  return res.json({ stats: store.getFeedbackStats() });
+});
+
+app.post('/api/feedback', (req: Request, res: Response) => {
+  try {
+    const {
+      targetType,
+      targetId,
+      targetName,
+      rating,
+      cleanlinessRating,
+      speedRating,
+      staffRating,
+      comment,
+      issueReport,
+      isAnonymous,
+    } = req.body;
+
+    if (!targetName || !rating) {
+      return res.status(400).json({ error: 'กรุณาระบุหัวข้อที่ประเมินและระดับคะแนนความพึงพอใจ' });
+    }
+
+    const numRating = Math.min(5, Math.max(1, parseInt(rating) || 5));
+    const numClean = Math.min(5, Math.max(1, parseInt(cleanlinessRating) || numRating));
+    const numSpeed = Math.min(5, Math.max(1, parseInt(speedRating) || numRating));
+    const numStaff = Math.min(5, Math.max(1, parseInt(staffRating) || numRating));
+
+    // Optional user info if logged in
+    let userId = 'anon-user';
+    let userName = 'ผู้ใช้บริการตึกไอที';
+    let userEmail = 'anonymous@it.ac.th';
+    let userRole = 'user';
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded = verifyToken(authHeader.substring(7));
+      if (decoded) {
+        userId = decoded.id;
+        userEmail = decoded.email;
+        userName = isAnonymous ? 'ผู้ใช้งาน (ไม่ระบุตัวตน)' : decoded.name;
+        userRole = decoded.role;
+      }
+    }
+
+    const newFeedback = {
+      id: `fb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      targetType: (targetType || 'overall') as 'room' | 'equipment' | 'overall',
+      targetId: targetId || undefined,
+      targetName: targetName.trim(),
+      userId,
+      userName: isAnonymous ? 'ผู้ใช้งาน (ไม่ระบุตัวตน)' : userName,
+      userEmail: isAnonymous ? 'anonymous@it.ac.th' : userEmail,
+      userRole,
+      rating: numRating,
+      cleanlinessRating: numClean,
+      speedRating: numSpeed,
+      staffRating: numStaff,
+      comment: (comment || '').trim(),
+      issueReport: (issueReport || '').trim(),
+      isAnonymous: Boolean(isAnonymous),
+      createdAt: new Date().toISOString(),
+    };
+
+    store.addFeedback(newFeedback);
+
+    store.addAuditLog({
+      eventType: 'SECURITY_SCAN' as any,
+      userId,
+      userEmail,
+      userRole,
+      ipAddress: getClientIp(req),
+      action: `ส่งแบบประเมินความพึงพอใจสำหรับ ${newFeedback.targetName} (${numRating} ดาว)`,
+      severity: 'info',
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'บันทึกแบบประเมินความพึงพอใจเรียบร้อยแล้ว ขอบคุณสำหรับข้อเสนอแนะ',
+      feedback: newFeedback,
+      stats: store.getFeedbackStats(),
+    });
+  } catch (err: any) {
+    console.error('Error submitting feedback:', err);
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกแบบประเมิน' });
+  }
 });
 
 // ----------------------------------------------------
@@ -1311,22 +1413,30 @@ app.all('/api/*', (_req: Request, res: Response) => {
 
 // Vite Middleware mounting in development or static serve in production
 async function startServer() {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const distPath = path.resolve(process.cwd(), 'dist');
+  const hasDist = fs.existsSync(distPath) && fs.existsSync(path.resolve(distPath, 'index.html'));
 
-  if (!isProduction) {
-    const { createServer } = await import('vite');
-    const vite = await createServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
+  if (process.env.NODE_ENV === 'production' && hasDist) {
+    app.use(express.static(distPath));
+    app.get('*', (_req: Request, res: Response) => {
+      res.sendFile(path.resolve(distPath, 'index.html'));
     });
-    app.use(vite.middlewares);
   } else {
-    const distPath = path.resolve(process.cwd(), 'dist');
-    if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
-      app.get('*', (_req: Request, res: Response) => {
-        res.sendFile(path.resolve(distPath, 'index.html'));
+    try {
+      const { createServer } = await import('vite');
+      const vite = await createServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
       });
+      app.use(vite.middlewares);
+    } catch (err) {
+      console.warn('Failed to start Vite middleware, falling back to static:', err);
+      if (hasDist) {
+        app.use(express.static(distPath));
+        app.get('*', (_req: Request, res: Response) => {
+          res.sendFile(path.resolve(distPath, 'index.html'));
+        });
+      }
     }
   }
 
