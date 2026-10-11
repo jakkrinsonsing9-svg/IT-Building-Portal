@@ -4,34 +4,31 @@ import { SatisfactionFeedback, FeedbackSummaryStats, Room, Equipment } from '../
 import { clientStorage } from '../services/clientStorage.ts';
 import {
   Star,
+  MessageSquareHeart,
+  ThumbsUp,
   Sparkles,
-  HeartHandshake,
-  CheckCircle2,
-  AlertTriangle,
+  ShieldCheck,
   Building2,
   Laptop,
-  MessageSquare,
-  ThumbsUp,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
   User,
-  ShieldCheck,
+  EyeOff,
   Filter,
+  Search,
   Plus,
   X,
-  Send,
-  HelpCircle,
+  TrendingUp,
+  Award,
+  Sparkle,
   Clock,
-  Search,
-  Flame,
-  Award
+  Heart
 } from 'lucide-react';
 
 interface SatisfactionSectionProps {
   openAuthModal: () => void;
-  preselectedTarget?: {
-    type: 'room' | 'equipment' | 'overall';
-    id?: string;
-    name: string;
-  };
+  preselectedTarget?: { type: 'room' | 'equipment' | 'overall'; id?: string; name: string };
 }
 
 export const SatisfactionSection: React.FC<SatisfactionSectionProps> = ({
@@ -39,88 +36,83 @@ export const SatisfactionSection: React.FC<SatisfactionSectionProps> = ({
   preselectedTarget,
 }) => {
   const { user, token } = useAuth();
-  const [feedbacks, setFeedbacks] = useState<SatisfactionFeedback[]>([]);
-  const [stats, setStats] = useState<FeedbackSummaryStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<'all' | 'room' | 'equipment' | 'overall' | 'issues'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [helpfulVotes, setHelpfulVotes] = useState<{ [id: string]: number }>({});
 
-  // Rooms and Equipment list for modal selector
-  const [roomsList, setRoomsList] = useState<Room[]>([]);
+  const [feedbacks, setFeedbacks] = useState<SatisfactionFeedback[]>([]);
+  const [stats, setStats] = useState<FeedbackSummaryStats>({
+    averageRating: 5.0,
+    totalReviews: 0,
+    ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    cleanlinessAvg: 5.0,
+    speedAvg: 5.0,
+    staffAvg: 5.0,
+    recommendationRate: 100,
+  });
+  const [loading, setLoading] = useState(true);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
 
-  // Modal State
+  // Filter and search
+  const [filterType, setFilterType] = useState<'all' | 'room' | 'equipment' | 'overall' | 'issues'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Helpful vote loading state
+  const [votingFeedbackId, setVotingFeedbackId] = useState<string | null>(null);
+
+  // Form Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [targetType, setTargetType] = useState<'room' | 'equipment' | 'overall'>('overall');
+  const [targetId, setTargetId] = useState('');
+  const [targetName, setTargetName] = useState('ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ');
+  const [rating, setRating] = useState(5);
+  const [cleanlinessRating, setCleanlinessRating] = useState(5);
+  const [speedRating, setSpeedRating] = useState(5);
+  const [staffRating, setStaffRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [issueReport, setIssueReport] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [modalSuccessMsg, setModalSuccessMsg] = useState<string | null>(null);
-  const [modalErrorMsg, setModalErrorMsg] = useState<string | null>(null);
+  const [modalSuccessMsg, setModalSuccessMsg] = useState('');
+  const [modalErrorMsg, setModalErrorMsg] = useState('');
 
-  // Form Fields
-  const [formTargetType, setFormTargetType] = useState<'room' | 'equipment' | 'overall'>('overall');
-  const [formTargetId, setFormTargetId] = useState<string>('');
-  const [formTargetName, setFormTargetName] = useState<string>('ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ');
-  const [formRating, setFormRating] = useState<number>(5);
-  const [formCleanliness, setFormCleanliness] = useState<number>(5);
-  const [formSpeed, setFormSpeed] = useState<number>(5);
-  const [formStaff, setFormStaff] = useState<number>(5);
-  const [formComment, setFormComment] = useState<string>('');
-  const [formIssueReport, setFormIssueReport] = useState<string>('');
-  const [formHasIssue, setFormHasIssue] = useState<boolean>(false);
-  const [formIsAnonymous, setFormIsAnonymous] = useState<boolean>(false);
-  const [hoverRating, setHoverRating] = useState<number>(0);
-
-  // Handle preselectedTarget
-  useEffect(() => {
-    if (preselectedTarget) {
-      setFormTargetType(preselectedTarget.type);
-      setFormTargetId(preselectedTarget.id || '');
-      setFormTargetName(preselectedTarget.name);
-      setIsModalOpen(true);
-    }
-  }, [preselectedTarget]);
-
-  // Fetch feedback and catalogs
+  // Load feedbacks and catalog
   const loadData = async () => {
     setLoading(true);
     try {
-      // Fetch feedback
+      // 1. Fetch feedbacks
       const res = await fetch('/api/feedback');
       if (res.ok) {
         const data = await res.json();
         setFeedbacks(data.feedbacks || []);
-        setStats(data.stats || null);
+        if (data.stats) setStats(data.stats);
       } else {
-        throw new Error('API feedback error');
+        const localFbs = clientStorage.getFeedbacks();
+        setFeedbacks(localFbs);
+        setStats(clientStorage.getFeedbackStats());
       }
     } catch {
-      // Fallback
       const localFbs = clientStorage.getFeedbacks();
-      const localStats = clientStorage.getFeedbackStats();
       setFeedbacks(localFbs);
-      setStats(localStats);
+      setStats(clientStorage.getFeedbackStats());
     }
 
     try {
-      // Fetch catalog for choices
-      const [roomsRes, eqRes] = await Promise.all([
-        fetch('/api/catalog/rooms'),
-        fetch('/api/catalog/equipment'),
+      // 2. Fetch rooms & equipment catalogs
+      const [roomsRes, eqRes] = await fetch('/api/catalog/rooms').then((r) => r.json()).catch(() => ({ rooms: [] }));
+      const [eqData] = await Promise.all([
+        fetch('/api/catalog/equipment').then((r) => r.json()).catch(() => ({ equipment: [] }))
       ]);
-      if (roomsRes.ok) {
-        const rData = await roomsRes.json();
-        setRoomsList(rData.rooms || []);
+      if (roomsRes?.rooms) {
+        setRooms(roomsRes.rooms);
       } else {
-        setRoomsList(clientStorage.getRooms());
+        setRooms(clientStorage.getRooms());
       }
-      if (eqRes.ok) {
-        const eqData = await eqRes.json();
-        setEquipmentList(eqData.equipment || []);
+      if (eqData?.equipment) {
+        setEquipmentList(eqData.equipment);
       } else {
         setEquipmentList(clientStorage.getEquipment());
       }
     } catch {
-      setRoomsList(clientStorage.getRooms());
+      setRooms(clientStorage.getRooms());
       setEquipmentList(clientStorage.getEquipment());
     } finally {
       setLoading(false);
@@ -131,65 +123,89 @@ export const SatisfactionSection: React.FC<SatisfactionSectionProps> = ({
     loadData();
   }, []);
 
-  const handleOpenModal = () => {
-    if (!user) {
-      openAuthModal();
-      return;
+  // When preselectedTarget changes, auto open form
+  useEffect(() => {
+    if (preselectedTarget) {
+      setTargetType(preselectedTarget.type);
+      setTargetId(preselectedTarget.id || '');
+      setTargetName(preselectedTarget.name);
+      setIsModalOpen(true);
     }
-    setModalSuccessMsg(null);
-    setModalErrorMsg(null);
+  }, [preselectedTarget]);
+
+  const handleOpenNewModal = () => {
+    setTargetType('overall');
+    setTargetId('');
+    setTargetName('ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ');
+    setRating(5);
+    setCleanlinessRating(5);
+    setSpeedRating(5);
+    setStaffRating(5);
+    setComment('');
+    setIssueReport('');
+    setIsAnonymous(false);
+    setModalSuccessMsg('');
+    setModalErrorMsg('');
     setIsModalOpen(true);
   };
 
   const handleTargetTypeChange = (type: 'room' | 'equipment' | 'overall') => {
-    setFormTargetType(type);
+    setTargetType(type);
     if (type === 'overall') {
-      setFormTargetId('');
-      setFormTargetName('ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ');
+      setTargetId('');
+      setTargetName('ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ');
     } else if (type === 'room') {
-      const first = roomsList[0];
-      setFormTargetId(first ? first.id : 'room-cybersec');
-      setFormTargetName(first ? first.name : 'ห้องปฏิบัติการ Cybersecurity (LAB-CYBER)');
-    } else {
-      const first = equipmentList[0];
-      setFormTargetId(first ? first.id : 'eq-gpu-01');
-      setFormTargetName(first ? first.name : 'การ์ดจอประมวลผลสูง (NVIDIA RTX)');
+      if (rooms.length > 0) {
+        setTargetId(rooms[0].id);
+        setTargetName(rooms[0].name);
+      } else {
+        setTargetId('');
+        setTargetName('ห้องปฏิบัติการไอที');
+      }
+    } else if (type === 'equipment') {
+      if (equipmentList.length > 0) {
+        setTargetId(equipmentList[0].id);
+        setTargetName(equipmentList[0].name);
+      } else {
+        setTargetId('');
+        setTargetName('อุปกรณ์ส่วนกลาง');
+      }
     }
   };
 
-  const handleRoomSelect = (roomId: string) => {
-    setFormTargetId(roomId);
-    const room = roomsList.find((r) => r.id === roomId);
-    if (room) setFormTargetName(room.name);
-  };
-
-  const handleEquipmentSelect = (eqId: string) => {
-    setFormTargetId(eqId);
-    const eq = equipmentList.find((e) => e.id === eqId);
-    if (eq) setFormTargetName(eq.name);
+  const handleSpecificTargetChange = (id: string) => {
+    setTargetId(id);
+    if (targetType === 'room') {
+      const rm = rooms.find((r) => r.id === id);
+      if (rm) setTargetName(rm.name);
+    } else if (targetType === 'equipment') {
+      const eq = equipmentList.find((e) => e.id === id);
+      if (eq) setTargetName(eq.name);
+    }
   };
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formTargetName.trim()) {
-      setModalErrorMsg('กรุณาระบุหัวข้อที่ต้องการประเมิน');
+    if (!comment.trim()) {
+      setModalErrorMsg('กรุณากรอกความคิดเห็นหรือข้อเสนอแนะ');
       return;
     }
 
     setSubmitting(true);
-    setModalErrorMsg(null);
+    setModalErrorMsg('');
+    setModalSuccessMsg('');
 
     const payload = {
-      targetType: formTargetType,
-      targetId: formTargetId || undefined,
-      targetName: formTargetName,
-      rating: formRating,
-      cleanlinessRating: formCleanliness,
-      speedRating: formSpeed,
-      staffRating: formStaff,
-      comment: formComment,
-      issueReport: formHasIssue ? formIssueReport : '',
-      isAnonymous: formIsAnonymous,
+      targetType,
+      targetId: targetId || undefined,
+      targetName: targetName.trim(),
+      rating,
+      cleanlinessRating,
+      speedRating,
+      staffRating,
+      comment: comment.trim(),
+      issueReport: issueReport.trim(),
+      isAnonymous,
     };
 
     try {
@@ -208,72 +224,99 @@ export const SatisfactionSection: React.FC<SatisfactionSectionProps> = ({
         setTimeout(() => {
           setIsModalOpen(false);
           loadData();
-          // Reset form
-          setFormComment('');
-          setFormIssueReport('');
-          setFormHasIssue(false);
-          setModalSuccessMsg(null);
         }, 1200);
       } else {
-        const err = await res.json();
-        throw new Error(err.error || 'บันทึกไม่สำเร็จ');
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'ไม่สามารถส่งแบบประเมินได้');
       }
-    } catch {
+    } catch (err: any) {
       // Local fallback
       const newFb: SatisfactionFeedback = {
-        id: `fb-${Date.now()}`,
-        targetType: formTargetType,
-        targetId: formTargetId || undefined,
-        targetName: formTargetName,
-        userId: user ? user.id : 'local-user',
-        userName: formIsAnonymous ? 'ผู้ใช้งาน (ไม่ระบุตัวตน)' : (user?.name || 'ผู้ใช้บริการ'),
-        userEmail: formIsAnonymous ? 'anonymous@it.ac.th' : (user?.email || 'user@example.com'),
+        id: `fb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        targetType,
+        targetId: targetId || undefined,
+        targetName,
+        userId: user?.id || 'anon-local',
+        userName: isAnonymous ? 'ผู้ใช้งาน (ไม่ระบุตัวตน)' : (user?.name || 'ผู้ใช้บริการตึกไอที'),
+        userEmail: isAnonymous ? 'anonymous@it.ac.th' : (user?.email || 'anonymous@it.ac.th'),
         userRole: user?.role || 'user',
-        rating: formRating,
-        cleanlinessRating: formCleanliness,
-        speedRating: formSpeed,
-        staffRating: formStaff,
-        comment: formComment,
-        issueReport: formHasIssue ? formIssueReport : '',
-        isAnonymous: formIsAnonymous,
+        rating,
+        cleanlinessRating,
+        speedRating,
+        staffRating,
+        comment: comment.trim(),
+        issueReport: issueReport.trim(),
+        isAnonymous,
+        helpfulUserIds: [],
         createdAt: new Date().toISOString(),
       };
       clientStorage.addFeedback(newFb);
-      setModalSuccessMsg('บันทึกแบบประเมินความพึงพอใจสำเร็จ (Local Secured)!');
+      setModalSuccessMsg('บันทึกแบบประเมินความพึงพอใจสำเร็จ!');
       setTimeout(() => {
         setIsModalOpen(false);
         loadData();
-        setFormComment('');
-        setFormIssueReport('');
-        setFormHasIssue(false);
-        setModalSuccessMsg(null);
       }, 1200);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleVoteHelpful = (id: string) => {
-    setHelpfulVotes((prev) => ({
-      ...prev,
-      [id]: (prev[id] || 0) + 1,
-    }));
+  const handleVoteHelpful = async (id: string) => {
+    if (!user) {
+      openAuthModal();
+      return;
+    }
+
+    if (votingFeedbackId) return;
+    setVotingFeedbackId(id);
+
+    try {
+      const res = await fetch(`/api/feedback/${id}/helpful`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setFeedbacks((prev) =>
+          prev.map((fb) => (fb.id === id ? data.feedback : fb))
+        );
+      } else {
+        const result = clientStorage.toggleHelpful(id, user.id);
+        if (result) {
+          setFeedbacks((prev) =>
+            prev.map((fb) => (fb.id === id ? result.feedback : fb))
+          );
+        }
+      }
+    } catch {
+      const result = clientStorage.toggleHelpful(id, user.id);
+      if (result) {
+        setFeedbacks((prev) =>
+          prev.map((fb) => (fb.id === id ? result.feedback : fb))
+        );
+      }
+    } finally {
+      setVotingFeedbackId(null);
+    }
   };
 
   const getRatingLabel = (r: number) => {
     switch (r) {
       case 5:
-        return '🌟 ดีเยี่ยม ประทับใจมากที่สุด';
+        return 'ดีเยี่ยม (5/5)';
       case 4:
-        return '😊 ดีมาก ตรงตามความคาดหวัง';
+        return 'ดีมาก (4/5)';
       case 3:
-        return '🙂 ปานกลาง ได้มาตรฐานทั่วไป';
+        return 'ปานกลาง (3/5)';
       case 2:
-        return '😐 พอใช้ ควรได้รับการปรับปรุง';
+        return 'ควรปรับปรุง (2/5)';
       case 1:
-        return '😞 แย่ ต้องปรับปรุงเร่งด่วน';
+        return 'ต้องปรับปรุงด่วน (1/5)';
       default:
-        return '';
+        return `${r}/5`;
     }
   };
 
@@ -288,59 +331,57 @@ export const SatisfactionSection: React.FC<SatisfactionSectionProps> = ({
       const q = searchQuery.toLowerCase();
       const matchName = fb.targetName.toLowerCase().includes(q);
       const matchComment = fb.comment.toLowerCase().includes(q);
+      const matchUser = fb.userName.toLowerCase().includes(q);
       const matchIssue = (fb.issueReport || '').toLowerCase().includes(q);
-      return matchName || matchComment || matchIssue;
+      if (!matchName && !matchComment && !matchUser && !matchIssue) return false;
     }
     return true;
   });
 
   return (
     <div className="space-y-8 pb-16">
-      {/* Top Banner & Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-1">
-            <HeartHandshake className="w-4 h-4 text-cyan-400" />
-            <span>ระบบประเมินความพึงพอใจและคุณภาพบริการ (CSAT & Quality Feedback)</span>
+      {/* Header Banner */}
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-white/10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/25 text-cyan-300 text-xs font-semibold">
+              <MessageSquareHeart className="w-3.5 h-3.5" />
+              <span>ระบบประเมินความพึงพอใจและคุณภาพบริการ (CSAT & Quality Feedback)</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              ศูนย์ประเมินความพึงพอใจการใช้งานอาคารไอที
+            </h2>
+            <p className="text-slate-300 text-sm max-w-2xl leading-relaxed">
+              ร่วมแสดงความคิดเห็น ให้คะแนนห้องปฏิบัติการ อุปกรณ์ส่วนกลาง หรือบริการภาพรวม เพื่อช่วยพัฒนาและยกระดับมาตรฐานความปลอดภัยและคุณภาพของอาคารไอที
+            </p>
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <span>ศูนย์ประเมินความพึงพอใจการใช้งานอาคารไอที</span>
-            <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-              Verified
-            </span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            ร่วมส่งต่อข้อเสนอแนะ ให้คะแนนห้องปฏิบัติการ อุปกรณ์ส่วนกลาง หรือแจ้งปัญหาการใช้งานจริง เพื่อพัฒนามาตรฐานการให้บริการของคณะเทคโนโลยีสารสนเทศอย่างต่อเนื่อง
-          </p>
+
+          <button
+            onClick={handleOpenNewModal}
+            className="px-5 py-3 rounded-xl font-semibold text-xs sm:text-sm text-white bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/25 border border-cyan-400/40 transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>เขียนแบบประเมินความพึงพอใจ</span>
+          </button>
         </div>
 
-        <button
-          onClick={handleOpenModal}
-          className="px-5 py-2.5 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 shadow-lg shadow-cyan-500/25 border border-cyan-400/40 transition-all flex items-center gap-2 cursor-pointer self-start md:self-auto shrink-0"
-        >
-          <Star className="w-4 h-4 fill-amber-300 text-amber-300" />
-          <span>เขียนแบบประเมินความพึงพอใจ</span>
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* KPI Stats Overview Cards */}
-      {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Overall Rating */}
-          <div className="glass-panel rounded-2xl p-5 border border-amber-500/30 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center justify-between mb-2">
+        {/* Stats Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
+          <div className="glass-card rounded-2xl p-4 border border-white/10">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-slate-400">คะแนนความพึงพอใจรวม</span>
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              </div>
+              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white tracking-tight">{stats.averageRating}</span>
-              <span className="text-xs text-slate-400 font-mono">/ 5.0 ดาว</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-white">
+                {stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : '-'}
+              </span>
+              <span className="text-xs text-slate-400">/ 5.0</span>
             </div>
-            <div className="flex items-center gap-1 mt-2 text-amber-400">
+            <div className="flex gap-0.5 mt-2">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star
                   key={s}
@@ -351,554 +392,593 @@ export const SatisfactionSection: React.FC<SatisfactionSectionProps> = ({
                   }`}
                 />
               ))}
-              <span className="text-[11px] text-slate-400 ml-1.5 font-mono">
-                ({stats.totalReviews} ความคิดเห็น)
-              </span>
             </div>
           </div>
 
-          {/* Card 2: Recommendation Rate */}
-          <div className="glass-panel rounded-2xl p-5 border border-emerald-500/30 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-400">อัตราความประทับใจ (CSAT)</span>
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
-                <ThumbsUp className="w-4 h-4" />
-              </div>
+          <div className="glass-card rounded-2xl p-4 border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-slate-400">จำนวนแบบประเมิน</span>
+              <MessageSquareHeart className="w-4 h-4 text-cyan-400" />
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-emerald-300 tracking-tight">
-                {stats.recommendationRate}%
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl sm:text-3xl font-extrabold text-white">
+                {stats.totalReviews}
               </span>
+              <span className="text-xs text-slate-400">รายการ</span>
+            </div>
+            <span className="text-[11px] text-cyan-300/80 mt-2 block font-mono">
+              {stats.totalReviews > 0 ? 'จากผู้ใช้บริการจริง' : 'รอแบบประเมินแรก'}
+            </span>
+          </div>
+
+          <div className="glass-card rounded-2xl p-4 border border-white/10">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-slate-400">พึงพอใจระดับดีขึ้นไป</span>
+              <ThumbsUp className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl sm:text-3xl font-extrabold text-emerald-400">
+                {stats.totalReviews > 0 ? `${stats.recommendationRate}%` : '-'}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 mt-2 block">
+              {stats.totalReviews > 0 ? 'ให้คะแนน 4-5 ดาว' : 'คำนวณอัตโนมัติ'}
+            </span>
+          </div>
+
+          <div className="glass-card rounded-2xl p-4 border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-slate-400">เฉลี่ย 3 มิติบริการ</span>
+              <Award className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div className="text-xs text-slate-300 space-y-1 mt-1">
+              <div className="flex justify-between">
+                <span>ความสะอาด:</span>
+                <span className="font-mono text-cyan-300 font-bold">
+                  {stats.totalReviews > 0 ? stats.cleanlinessAvg.toFixed(1) : '-'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>ความรวดเร็ว:</span>
+                <span className="font-mono text-cyan-300 font-bold">
+                  {stats.totalReviews > 0 ? stats.speedAvg.toFixed(1) : '-'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>เจ้าหน้าที่:</span>
+                <span className="font-mono text-cyan-300 font-bold">
+                  {stats.totalReviews > 0 ? stats.staffAvg.toFixed(1) : '-'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        {/* Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setFilterType('all')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              filterType === 'all'
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                : 'glass-card text-slate-300 hover:text-white border border-white/10'
+            }`}
+          >
+            ทั้งหมด ({feedbacks.length})
+          </button>
+          <button
+            onClick={() => setFilterType('room')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              filterType === 'room'
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                : 'glass-card text-slate-300 hover:text-white border border-white/10'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>ห้องปฏิบัติการ ({feedbacks.filter((f) => f.targetType === 'room').length})</span>
+          </button>
+          <button
+            onClick={() => setFilterType('equipment')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              filterType === 'equipment'
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                : 'glass-card text-slate-300 hover:text-white border border-white/10'
+            }`}
+          >
+            <Laptop className="w-3.5 h-3.5" />
+            <span>อุปกรณ์ส่วนกลาง ({feedbacks.filter((f) => f.targetType === 'equipment').length})</span>
+          </button>
+          <button
+            onClick={() => setFilterType('overall')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              filterType === 'overall'
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                : 'glass-card text-slate-300 hover:text-white border border-white/10'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>ภาพรวมอาคาร ({feedbacks.filter((f) => f.targetType === 'overall').length})</span>
+          </button>
+          <button
+            onClick={() => setFilterType('issues')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              filterType === 'issues'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
+                : 'glass-card text-slate-300 hover:text-white border border-white/10'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>แจ้งปัญหาการใช้งาน ({feedbacks.filter((f) => f.issueReport && f.issueReport.trim().length > 0).length})</span>
+          </button>
+        </div>
+
+        {/* Search Input */}
+        <div className="relative min-w-[240px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="ค้นหาข้อเสนอแนะ..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Feedbacks Grid / List */}
+      {loading ? (
+        <div className="text-center py-16">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mb-3" />
+          <p className="text-xs text-slate-400">กำลังโหลดรายการแบบประเมินความพึงพอใจ...</p>
+        </div>
+      ) : filteredFeedbacks.length === 0 ? (
+        <div className="glass-card rounded-3xl p-12 text-center border border-white/10 space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center text-cyan-300">
+            <MessageSquareHeart className="w-8 h-8" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-white">ยังไม่มีแบบประเมินความพึงพอใจในหมวดหมู่นี้</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              ร่วมเป็นคนแรกที่ส่งแบบประเมินความพึงพอใจ เพื่อช่วยพัฒนาคุณภาพอาคารเทคโนโลยีสารสนเทศให้ดียิ่งขึ้น
+            </p>
+          </div>
+          <button
+            onClick={handleOpenNewModal}
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-cyan-200 glass-card hover:bg-cyan-500/20 border border-cyan-400/30 transition-colors cursor-pointer inline-flex items-center gap-2"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>เขียนแบบประเมินความพึงพอใจ</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {filteredFeedbacks.map((fb) => {
+            const helpfulList = Array.isArray(fb.helpfulUserIds) ? fb.helpfulUserIds : [];
+            const votes = helpfulList.length;
+            const isVotedByUser = user ? helpfulList.includes(user.id) : false;
+            const isVotingThis = votingFeedbackId === fb.id;
+
+            return (
               <div
-                className="bg-emerald-400 h-1.5 rounded-full transition-all"
-                style={{ width: `${stats.recommendationRate}%` }}
-              />
-            </div>
-          </div>
+                key={fb.id}
+                className="glass-card rounded-2xl p-5 border border-white/10 hover:border-cyan-500/30 transition-all flex flex-col justify-between gap-4"
+              >
+                <div className="space-y-3">
+                  {/* Top Bar of Card */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-300 text-xs font-bold">
+                        {fb.isAnonymous ? <EyeOff className="w-4 h-4 text-slate-400" /> : <User className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">
+                            {fb.userName}
+                          </span>
+                          {fb.isAnonymous && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700">
+                              ไม่เปิดเผยตัวตน
+                            </span>
+                          )}
+                          {!fb.isAnonymous && fb.userRole === 'admin' && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          <span>{new Date(fb.createdAt).toLocaleString('th-TH')}</span>
+                        </span>
+                      </div>
+                    </div>
 
-          {/* Card 3: Cleanliness & Readiness */}
-          <div className="glass-panel rounded-2xl p-5 border border-cyan-500/30 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-400">ความสะอาด & ความพร้อม</span>
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center">
-                <Building2 className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-cyan-300 tracking-tight">{stats.cleanlinessAvg}</span>
-              <span className="text-xs text-slate-400 font-mono">/ 5.0</span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-2">
-              ความสมบูรณ์ของห้องแล็บและสภาพอุปกรณ์
-            </p>
-          </div>
+                    {/* Target Badge */}
+                    <div className="px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1.5 shrink-0 bg-slate-900/60 border-white/10 text-slate-300">
+                      {fb.targetType === 'room' && <Building2 className="w-3 h-3 text-cyan-400" />}
+                      {fb.targetType === 'equipment' && <Laptop className="w-3 h-3 text-cyan-400" />}
+                      {fb.targetType === 'overall' && <Sparkles className="w-3 h-3 text-amber-400" />}
+                      <span className="truncate max-w-[140px] sm:max-w-[180px]">{fb.targetName}</span>
+                    </div>
+                  </div>
 
-          {/* Card 4: Service Speed & Staff */}
-          <div className="glass-panel rounded-2xl p-5 border border-indigo-500/30 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-400">ความรวดเร็ว & เจ้าหน้าที่</span>
-              <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center">
-                <Award className="w-4 h-4" />
+                  {/* Rating Stars */}
+                  <div className="flex items-center gap-3 pt-1">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-4 h-4 ${
+                            s <= fb.rating
+                              ? 'fill-amber-400 text-amber-400'
+                              : 'text-slate-700'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-amber-300">
+                      {getRatingLabel(fb.rating)}
+                    </span>
+                  </div>
+
+                  {/* Rating breakdown pills */}
+                  <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-white/5">
+                      ความสะอาด: <b className="text-cyan-300">{fb.cleanlinessRating}/5</b>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-white/5">
+                      ความรวดเร็ว: <b className="text-cyan-300">{fb.speedRating}/5</b>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-white/5">
+                      เจ้าหน้าที่: <b className="text-cyan-300">{fb.staffRating}/5</b>
+                    </span>
+                  </div>
+
+                  {/* Comment Body */}
+                  <p className="text-xs text-slate-200 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">
+                    {fb.comment}
+                  </p>
+
+                  {/* Issue Report if provided */}
+                  {fb.issueReport && fb.issueReport.trim().length > 0 && (
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-[11px] text-amber-300 block">แจ้งปัญหาการใช้งาน:</span>
+                        <p className="text-[11px] leading-relaxed text-amber-100">{fb.issueReport}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer of Card: Helpful Button (1 user = 1 vote strictly) */}
+                <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500">
+                    ยืนยันตัวตนด้วยระบบ RBAC
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleVoteHelpful(fb.id)}
+                    disabled={isVotingThis}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                      isVotedByUser
+                        ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-sm shadow-cyan-500/20 font-bold'
+                        : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                    }`}
+                    title={
+                      isVotedByUser
+                        ? 'คุณกดเป็นประโยชน์แล้ว (คลิกเพื่อยกเลิก)'
+                        : 'คลิกเพื่อให้คะแนนเป็นประโยชน์ (1 คน 1 สิทธิ์)'
+                    }
+                  >
+                    <ThumbsUp
+                      className={`w-3.5 h-3.5 ${
+                        isVotedByUser ? 'fill-cyan-400 text-cyan-400' : 'text-slate-400'
+                      }`}
+                    />
+                    <span>มีประโยชน์</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                        isVotedByUser
+                          ? 'bg-cyan-400 text-slate-950 font-bold'
+                          : 'bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      {votes}
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-indigo-300 tracking-tight">{stats.staffAvg}</span>
-              <span className="text-xs text-slate-400 font-mono">/ 5.0</span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-2">
-              การประสานงานและคำแนะนำของเจ้าหน้าที่
-            </p>
-          </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Main Content Layout: Filters + Reviews Grid */}
-      <div className="space-y-4">
-        {/* Filter and Search Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-          {/* Category Chips */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setFilterType('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                filterType === 'all'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-white/10'
-              }`}
-            >
-              ทั้งหมด ({feedbacks.length})
-            </button>
-            <button
-              onClick={() => setFilterType('room')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                filterType === 'room'
-                  ? 'bg-cyan-400 text-slate-950 font-bold shadow-lg shadow-cyan-400/20'
-                  : 'bg-slate-900/80 text-cyan-300 hover:text-white border border-cyan-800/40'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>ห้องปฏิบัติการ ({feedbacks.filter((f) => f.targetType === 'room').length})</span>
-            </button>
-            <button
-              onClick={() => setFilterType('equipment')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                filterType === 'equipment'
-                  ? 'bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-400/20'
-                  : 'bg-slate-900/80 text-emerald-300 hover:text-white border border-emerald-800/40'
-              }`}
-            >
-              <Laptop className="w-3.5 h-3.5" />
-              <span>อุปกรณ์ส่วนกลาง ({feedbacks.filter((f) => f.targetType === 'equipment').length})</span>
-            </button>
-            <button
-              onClick={() => setFilterType('overall')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                filterType === 'overall'
-                  ? 'bg-indigo-400 text-slate-950 font-bold shadow-lg shadow-indigo-400/20'
-                  : 'bg-slate-900/80 text-indigo-300 hover:text-white border border-indigo-800/40'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>ภาพรวมอาคาร ({feedbacks.filter((f) => f.targetType === 'overall').length})</span>
-            </button>
-            <button
-              onClick={() => setFilterType('issues')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                filterType === 'issues'
-                  ? 'bg-amber-400 text-slate-950 font-bold shadow-lg shadow-amber-400/20'
-                  : 'bg-slate-900/80 text-amber-300 hover:text-white border border-amber-800/40'
-              }`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>แจ้งปัญหาการใช้งาน ({feedbacks.filter((f) => f.issueReport && f.issueReport.trim().length > 0).length})</span>
-            </button>
-          </div>
-
-          {/* Search box */}
-          <div className="relative max-w-xs w-full">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ค้นหาตามชื่อห้อง, อุปกรณ์ หรือข้อความ..."
-              className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
-            />
-          </div>
-        </div>
-
-        {/* Reviews Feed */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-44 rounded-2xl glass-card animate-pulse" />
-            ))}
-          </div>
-        ) : filteredFeedbacks.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-12 text-center border border-white/10 max-w-lg mx-auto my-8">
-            <MessageSquare className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <h4 className="text-base font-bold text-white mb-1">ยังไม่พบแบบประเมินในหมวดนี้</h4>
-            <p className="text-xs text-slate-400 mb-6">
-              ร่วมเป็นคนแรกที่ส่งแบบประเมินความพึงพอใจสำหรับหมวดหมู่นี้
-            </p>
-            <button
-              onClick={handleOpenModal}
-              className="px-5 py-2.5 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-md shadow-cyan-500/20 cursor-pointer"
-            >
-              เขียนแบบประเมินความพึงพอใจ
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredFeedbacks.map((fb) => {
-              const isRoom = fb.targetType === 'room';
-              const isEq = fb.targetType === 'equipment';
-              const votes = helpfulVotes[fb.id] || 0;
-
-              return (
-                <div
-                  key={fb.id}
-                  className="glass-card rounded-2xl p-5 border border-white/10 hover:border-cyan-500/30 transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    {/* Top Row: Target & Rating */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${
-                              isRoom
-                                ? 'bg-cyan-950/80 text-cyan-300 border-cyan-800/60'
-                                : isEq
-                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800/60'
-                                : 'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
-                            }`}
-                          >
-                            {isRoom ? 'ห้องปฏิบัติการ' : isEq ? 'อุปกรณ์ส่วนกลาง' : 'ภาพรวมบริการ'}
-                          </span>
-                          <span className="text-[11px] text-slate-500 font-mono">
-                            {new Date(fb.createdAt).toLocaleDateString('th-TH', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-white line-clamp-1">{fb.targetName}</h4>
-                      </div>
-
-                      {/* Stars badge */}
-                      <div className="flex items-center gap-1 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-amber-500/30 shrink-0">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span className="text-xs font-bold font-mono text-amber-300">{fb.rating}.0</span>
-                      </div>
-                    </div>
-
-                    {/* Detailed dimension chips */}
-                    <div className="flex flex-wrap gap-2 text-[10px] font-mono text-slate-300">
-                      <span className="bg-slate-900/90 px-2 py-0.5 rounded border border-white/5">
-                        ความสะอาด: <strong className="text-cyan-300">{fb.cleanlinessRating}/5</strong>
-                      </span>
-                      <span className="bg-slate-900/90 px-2 py-0.5 rounded border border-white/5">
-                        ความรวดเร็ว: <strong className="text-emerald-300">{fb.speedRating}/5</strong>
-                      </span>
-                      <span className="bg-slate-900/90 px-2 py-0.5 rounded border border-white/5">
-                        คำแนะนำเจ้าหน้าที่: <strong className="text-indigo-300">{fb.staffRating}/5</strong>
-                      </span>
-                    </div>
-
-                    {/* Comment Text */}
-                    {fb.comment && (
-                      <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-white/5">
-                        "{fb.comment}"
-                      </p>
-                    )}
-
-                    {/* Reported Issue (if any) */}
-                    {fb.issueReport && (
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-1">
-                        <div className="flex items-center gap-1.5 font-bold text-[11px] text-amber-400">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                          <span>ข้อเสนอแนะ/ปัญหาที่แจ้ง:</span>
-                        </div>
-                        <p className="text-[11px] text-slate-300">{fb.issueReport}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer Row: User & Helpful Vote */}
-                  <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-slate-300">
-                        <User className="w-3 h-3" />
-                      </div>
-                      <span className="text-[11px] font-medium text-slate-300">{fb.userName}</span>
-                      {fb.userRole === 'admin' && (
-                        <span className="text-[9px] font-mono text-amber-300 bg-amber-500/20 px-1 rounded">
-                          Staff
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => handleVoteHelpful(fb.id)}
-                      className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
-                      title="กดถูกใจหรือเห็นว่ารีวิวนี้มีประโยชน์"
-                    >
-                      <ThumbsUp className="w-3 h-3" />
-                      <span>มีประโยชน์ {votes > 0 && `(${votes})`}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Evaluation Modal */}
+      {/* Modal: Write Feedback Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-xl glass-panel rounded-3xl p-6 sm:p-8 border border-cyan-500/30 shadow-2xl text-slate-100 my-8">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-xl glass-panel rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl space-y-6 my-8">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
+                  <MessageSquareHeart className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">แบบประเมินความพึงพอใจและคุณภาพบริการ</h3>
+                  <p className="text-[11px] text-slate-400">อาคารเทคโนโลยีสารสนเทศ (IT Building)</p>
+                </div>
+              </div>
 
-            {/* Modal Header */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                <Star className="w-5 h-5 fill-white text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">แบบประเมินความพึงพอใจและคุณภาพบริการ</h3>
-                <p className="text-xs text-slate-400">
-                  คณะเทคโนโลยีสารสนเทศ อาคาร IT Building
-                </p>
-              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {modalSuccessMsg && (
-              <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{modalSuccessMsg}</span>
               </div>
             )}
 
             {modalErrorMsg && (
-              <div className="mb-4 p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-200 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-400/30 text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{modalErrorMsg}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmitFeedback} className="space-y-5">
-              {/* Step 1: Target Category Selector */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  1. เลือกสิ่งที่ต้องการประเมิน
+              {/* Target Type Selector */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  1. เลือกหมวดหมู่ที่ต้องการประเมิน
                 </label>
-                <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => handleTargetTypeChange('overall')}
-                    className={`p-2.5 rounded-xl text-xs font-semibold border flex flex-col items-center gap-1.5 transition-all ${
-                      formTargetType === 'overall'
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
-                        : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'
+                    className={`py-2 px-3 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      targetType === 'overall'
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 font-bold'
+                        : 'bg-slate-900/40 text-slate-400 border-white/5 hover:text-white'
                     }`}
                   >
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <Sparkles className="w-3.5 h-3.5" />
                     <span>ภาพรวมอาคาร</span>
                   </button>
-
                   <button
                     type="button"
                     onClick={() => handleTargetTypeChange('room')}
-                    className={`p-2.5 rounded-xl text-xs font-semibold border flex flex-col items-center gap-1.5 transition-all ${
-                      formTargetType === 'room'
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
-                        : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'
+                    className={`py-2 px-3 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      targetType === 'room'
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 font-bold'
+                        : 'bg-slate-900/40 text-slate-400 border-white/5 hover:text-white'
                     }`}
                   >
-                    <Building2 className="w-4 h-4 text-cyan-400" />
+                    <Building2 className="w-3.5 h-3.5" />
                     <span>ห้องปฏิบัติการ</span>
                   </button>
-
                   <button
                     type="button"
                     onClick={() => handleTargetTypeChange('equipment')}
-                    className={`p-2.5 rounded-xl text-xs font-semibold border flex flex-col items-center gap-1.5 transition-all ${
-                      formTargetType === 'equipment'
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
-                        : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'
+                    className={`py-2 px-3 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      targetType === 'equipment'
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 font-bold'
+                        : 'bg-slate-900/40 text-slate-400 border-white/5 hover:text-white'
                     }`}
                   >
-                    <Laptop className="w-4 h-4 text-cyan-400" />
+                    <Laptop className="w-3.5 h-3.5" />
                     <span>อุปกรณ์ส่วนกลาง</span>
                   </button>
                 </div>
-
-                {/* Sub dropdown when Room or Equipment selected */}
-                {formTargetType === 'room' && (
-                  <select
-                    value={formTargetId}
-                    onChange={(e) => handleRoomSelect(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/15 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400"
-                  >
-                    {roomsList.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.code} - {r.name} (ชั้น {r.floor})
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {formTargetType === 'equipment' && (
-                  <select
-                    value={formTargetId}
-                    onChange={(e) => handleEquipmentSelect(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/15 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400"
-                  >
-                    {equipmentList.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.name} ({e.serialNumber})
-                      </option>
-                    ))}
-                  </select>
-                )}
               </div>
 
-              {/* Step 2: Main 5-Star Rating */}
-              <div className="bg-slate-950/60 p-4 rounded-2xl border border-white/10 text-center space-y-2">
-                <label className="block text-xs font-semibold text-slate-200">
-                  2. ระดับความพึงพอใจโดยรวม (Overall Satisfaction)
-                </label>
-                <div className="flex items-center justify-center gap-2 py-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
+              {/* Specific target dropdown */}
+              {targetType === 'room' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-300 block">
+                    เลือกห้องปฏิบัติการ:
+                  </label>
+                  <select
+                    value={targetId}
+                    onChange={(e) => handleSpecificTargetChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                  >
+                    {rooms.map((r) => (
+                      <option key={r.id} value={r.id} className="bg-slate-900 text-white">
+                        {r.name} ({r.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {targetType === 'equipment' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-300 block">
+                    เลือกอุปกรณ์:
+                  </label>
+                  <select
+                    value={targetId}
+                    onChange={(e) => handleSpecificTargetChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                  >
+                    {equipmentList.map((eq) => (
+                      <option key={eq.id} value={eq.id} className="bg-slate-900 text-white">
+                        {eq.name} ({eq.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Overall Star Rating */}
+              <div className="space-y-2 p-3.5 rounded-2xl bg-white/5 border border-white/5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-white block">
+                    2. ระดับความพึงพอใจโดยรวม (Overall Satisfaction)
+                  </label>
+                  <span className="text-xs font-bold text-amber-300">
+                    {getRatingLabel(rating)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  {[1, 2, 3, 4, 5].map((s) => (
                     <button
-                      key={star}
+                      key={s}
                       type="button"
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      onClick={() => setFormRating(star)}
-                      className="p-1 transition-transform hover:scale-125 focus:outline-none cursor-pointer"
+                      onClick={() => setRating(s)}
+                      className="p-1 hover:scale-110 transition-transform cursor-pointer"
                     >
                       <Star
                         className={`w-7 h-7 ${
-                          star <= (hoverRating || formRating)
-                            ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]'
-                            : 'text-slate-600'
+                          s <= rating
+                            ? 'fill-amber-400 text-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]'
+                            : 'text-slate-600 hover:text-slate-400'
                         }`}
                       />
                     </button>
                   ))}
                 </div>
-                <p className="text-xs font-semibold text-amber-300">
-                  {getRatingLabel(hoverRating || formRating)}
-                </p>
               </div>
 
-              {/* Step 3: Dimension Breakdown (3 Categories) */}
-              <div className="space-y-3 bg-slate-900/40 p-3.5 rounded-2xl border border-white/5">
+              {/* 3 Detail Dimensions */}
+              <div className="space-y-3 p-3.5 rounded-2xl bg-slate-900/40 border border-white/5">
                 <span className="text-xs font-semibold text-slate-300 block">
-                  3. ให้คะแนนรายด้าน (1 - 5 ดาว)
+                  3. ให้คะแนนรายมิติบริการ (1-5 คะแนน)
                 </span>
 
                 {/* Cleanliness */}
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300">สภาพความสะอาด & ความสมบูรณ์:</span>
+                  <span className="text-slate-400">ความสะอาดและสภาพแวดล้อม:</span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <button
                         key={s}
                         type="button"
-                        onClick={() => setFormCleanliness(s)}
-                        className="p-0.5"
+                        onClick={() => setCleanlinessRating(s)}
+                        className="cursor-pointer"
                       >
                         <Star
                           className={`w-4 h-4 ${
-                            s <= formCleanliness ? 'fill-cyan-400 text-cyan-400' : 'text-slate-600'
+                            s <= cleanlinessRating
+                              ? 'fill-cyan-400 text-cyan-400'
+                              : 'text-slate-700'
                           }`}
                         />
                       </button>
                     ))}
-                    <span className="text-[11px] font-mono text-cyan-300 ml-1.5 w-6 text-right">
-                      {formCleanliness}★
+                    <span className="w-5 text-right font-mono text-cyan-300 font-bold ml-1">
+                      {cleanlinessRating}
                     </span>
                   </div>
                 </div>
 
                 {/* Speed */}
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300">ความสะดวกรวดเร็วในการบริการ:</span>
+                  <span className="text-slate-400">ความรวดเร็วในการให้บริการ:</span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <button
                         key={s}
                         type="button"
-                        onClick={() => setFormSpeed(s)}
-                        className="p-0.5"
+                        onClick={() => setSpeedRating(s)}
+                        className="cursor-pointer"
                       >
                         <Star
                           className={`w-4 h-4 ${
-                            s <= formSpeed ? 'fill-emerald-400 text-emerald-400' : 'text-slate-600'
+                            s <= speedRating
+                              ? 'fill-cyan-400 text-cyan-400'
+                              : 'text-slate-700'
                           }`}
                         />
                       </button>
                     ))}
-                    <span className="text-[11px] font-mono text-emerald-300 ml-1.5 w-6 text-right">
-                      {formSpeed}★
+                    <span className="w-5 text-right font-mono text-cyan-300 font-bold ml-1">
+                      {speedRating}
                     </span>
                   </div>
                 </div>
 
                 {/* Staff */}
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300">การดูแลและคำแนะนำของเจ้าหน้าที่:</span>
+                  <span className="text-slate-400">อัธยาศัยและคำแนะนำของเจ้าหน้าที่:</span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <button
                         key={s}
                         type="button"
-                        onClick={() => setFormStaff(s)}
-                        className="p-0.5"
+                        onClick={() => setStaffRating(s)}
+                        className="cursor-pointer"
                       >
                         <Star
                           className={`w-4 h-4 ${
-                            s <= formStaff ? 'fill-indigo-400 text-indigo-400' : 'text-slate-600'
+                            s <= staffRating
+                              ? 'fill-cyan-400 text-cyan-400'
+                              : 'text-slate-700'
                           }`}
                         />
                       </button>
                     ))}
-                    <span className="text-[11px] font-mono text-indigo-300 ml-1.5 w-6 text-right">
-                      {formStaff}★
+                    <span className="w-5 text-right font-mono text-cyan-300 font-bold ml-1">
+                      {staffRating}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Step 4: Comments */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  4. ข้อคิดเห็นหรือความประทับใจเพิ่มเติม
+              {/* Comment Textarea */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  4. ความคิดเห็นหรือข้อเสนอแนะเพิ่มเติม <span className="text-rose-400">*</span>
                 </label>
                 <textarea
+                  required
                   rows={3}
-                  value={formComment}
-                  onChange={(e) => setFormComment(e.target.value)}
-                  placeholder="บอกเล่าประสบการณ์ ความประทับใจ หรือสิ่งที่อยากชมเชยทีมงาน..."
-                  className="w-full bg-slate-900 border border-white/15 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="แสดงความคิดเห็น เช่น อุปกรณ์ทำงานเสถียร แอร์เย็น ห้องสะอาด หรือสิ่งที่คุณประทับใจ..."
+                  className="w-full p-3 bg-slate-900 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 leading-relaxed"
                 />
               </div>
 
-              {/* Step 5: Issue Reporting Checkbox & Input */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={formHasIssue}
-                    onChange={(e) => setFormHasIssue(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/20 text-cyan-500 focus:ring-0 bg-slate-900"
-                  />
-                  <span>พบข้อบกพร่อง / อุปกรณ์ชำรุด หรือจุดที่ต้องการให้แก้ไขหรือไม่?</span>
+              {/* Optional Issue Report */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>5. แจ้งปัญหาการใช้งานหรือจุดชำรุด (ถ้ามี)</span>
                 </label>
-
-                {formHasIssue && (
-                  <div className="pt-1">
-                    <input
-                      type="text"
-                      value={formIssueReport}
-                      onChange={(e) => setFormIssueReport(e.target.value)}
-                      placeholder="ระบุปัญหา เช่น แอร์ในห้องไม่เย็น, หัวสายแลนล็อคหลวม, ไฟดับบางจุด..."
-                      className="w-full bg-slate-900 border border-amber-500/40 rounded-xl p-2.5 text-xs text-amber-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
-                    />
-                    <p className="text-[10px] text-amber-300/80 mt-1">
-                      * ข้อมูลปัญหานี้จะถูกส่งต่อให้ทีมเทคนิคประจำอาคารไอทีดำเนินการตรวจสอบทันที
-                    </p>
-                  </div>
-                )}
+                <input
+                  type="text"
+                  value={issueReport}
+                  onChange={(e) => setIssueReport(e.target.value)}
+                  placeholder="เช่น ปลั๊กไฟโต๊ะหลังห้องไม่ติด, สายชาร์จหลวม..."
+                  className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                />
               </div>
 
-              {/* Step 6: Anonymous Toggle */}
-              <div className="pt-1 flex items-center justify-between text-xs text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
+              {/* Anonymous Checkbox */}
+              <div className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-cyan-400" />
-                  <span>ส่งแบบประเมินแบบไม่เปิดเผยตัวตน (Anonymous)</span>
+                  <EyeOff className="w-4 h-4 text-slate-400" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">ส่งแบบประเมินโดยไม่ระบุตัวตน</span>
+                    <span className="text-[10px] text-slate-400">ระบบจะไม่แสดงชื่อและอีเมลของคุณในหน้ารวมความเห็น</span>
+                  </div>
                 </div>
                 <input
                   type="checkbox"
-                  checked={formIsAnonymous}
-                  onChange={(e) => setFormIsAnonymous(e.target.checked)}
-                  className="w-4 h-4 rounded border-white/20 text-cyan-500 focus:ring-0 bg-slate-900 cursor-pointer"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-400 focus:ring-offset-slate-900 cursor-pointer"
                 />
               </div>
 
@@ -907,17 +987,21 @@ export const SatisfactionSection: React.FC<SatisfactionSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/10 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white glass-card border border-white/10 cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 shadow-lg shadow-cyan-500/25 border border-cyan-400/30 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/25 border border-cyan-400/40 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{submitting ? 'กำลังบันทึก...' : 'ส่งแบบประเมิน'}</span>
+                  {submitting ? (
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4" />
+                  )}
+                  <span>{submitting ? 'กำลังบันทึก...' : 'บันทึกแบบประเมิน'}</span>
                 </button>
               </div>
             </form>

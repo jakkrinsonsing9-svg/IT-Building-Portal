@@ -445,6 +445,132 @@ app.post('/api/auth/resend-otp', (req: Request, res: Response) => {
   });
 });
 
+// ----------------------------------------------------
+// Forgot & Reset Password Flow (ระบบรีเซ็ตรหัสผ่านด้วย OTP)
+// ----------------------------------------------------
+app.post('/api/auth/forgot-password', (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'กรุณาระบุอีเมลที่ใช้ลงทะเบียน' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const user = store.findUserByEmail(cleanEmail);
+  if (!user) {
+    store.addAuditLog({
+      eventType: 'AUTH_LOGIN_FAILED',
+      userEmail: cleanEmail,
+      ipAddress: getClientIp(req),
+      action: `ขอรีเซ็ตรหัสผ่านล้มเหลว: ไม่พบอีเมล ${cleanEmail} ในระบบ`,
+      severity: 'warning',
+    });
+    return res.status(404).json({ error: 'ไม่พบบัญชีผู้ใช้ที่ใช้อีเมลนี้ในระบบ' });
+  }
+
+  const otpCode = generateOTP();
+  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+  otpStore.set(cleanEmail, {
+    code: otpCode,
+    email: cleanEmail,
+    userId: user.id,
+    expiresAt,
+    attempts: 0,
+    purpose: 'PASSWORD_RESET',
+  });
+
+  store.addAuditLog({
+    eventType: 'AUTH_LOGIN',
+    userId: user.id,
+    userEmail: user.email,
+    userRole: user.role,
+    ipAddress: getClientIp(req),
+    action: `ขอรหัส OTP สำหรับรีเซ็ตรหัสผ่านไปยัง ${maskEmail(user.email)}`,
+    severity: 'info',
+  });
+
+  console.log(`[PASSWORD RESET OTP] Code for ${user.email}: ${otpCode}`);
+
+  return res.json({
+    success: true,
+    maskedEmail: maskEmail(user.email),
+    expiresInSeconds: 300,
+    devOtpCode: otpCode,
+    message: `ส่งรหัส OTP สำหรับรีเซ็ตรหัสผ่านไปยัง ${maskEmail(user.email)} แล้ว`,
+  });
+});
+
+app.post('/api/auth/reset-password', (req: Request, res: Response) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน (อีเมล, รหัส OTP, รหัสผ่านใหม่)' });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const record = otpStore.get(cleanEmail);
+
+  if (!record || record.purpose !== 'PASSWORD_RESET') {
+    return res.status(400).json({ error: 'ไม่พบคำขอรีเซ็ตรหัสผ่าน หรือรหัส OTP หมดอายุแล้ว กรุณากดขอรหัสใหม่' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    otpStore.delete(cleanEmail);
+    return res.status(400).json({ error: 'รหัส OTP หมดอายุแล้ว (อายุการใช้งาน 5 นาที) กรุณาขอรหัสใหม่' });
+  }
+
+  if (record.attempts >= 5) {
+    otpStore.delete(cleanEmail);
+    store.addAuditLog({
+      eventType: 'AUTH_LOGIN_FAILED',
+      userEmail: cleanEmail,
+      ipAddress: getClientIp(req),
+      action: `รีเซ็ตรหัสผ่านล้มเหลว: กรอก OTP ผิดเกิน 5 ครั้ง บล็อกคำขอสำหรับ ${cleanEmail}`,
+      severity: 'critical',
+    });
+    return res.status(429).json({ error: 'คุณกรอกรหัส OTP ผิดเกินกำหนด กรุณาขอรหัสใหม่อีกครั้ง' });
+  }
+
+  if (record.code !== otp.trim()) {
+    record.attempts += 1;
+    store.addAuditLog({
+      eventType: 'AUTH_LOGIN_FAILED',
+      userEmail: cleanEmail,
+      ipAddress: getClientIp(req),
+      action: `รีเซ็ตรหัสผ่านล้มเหลว: รหัส OTP ไม่ถูกต้อง ครั้งที่ ${record.attempts}/5 สำหรับ ${cleanEmail}`,
+      severity: 'warning',
+    });
+    return res.status(400).json({ error: `รหัส OTP ไม่ถูกต้อง (เหลือโอกาสอีก ${5 - record.attempts} ครั้ง)` });
+  }
+
+  // OTP verified! Hash new password with bcrypt
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(newPassword, salt);
+
+  const updated = store.updateUserPassword(cleanEmail, passwordHash);
+  if (!updated) {
+    return res.status(404).json({ error: 'ไม่พบบัญชีผู้ใช้ในระบบ' });
+  }
+
+  otpStore.delete(cleanEmail);
+
+  store.addAuditLog({
+    eventType: 'AUTH_LOGIN',
+    userEmail: cleanEmail,
+    ipAddress: getClientIp(req),
+    action: `เปลี่ยนรหัสผ่านสำเร็จ (Password Reset via OTP): ${cleanEmail}`,
+    severity: 'info',
+  });
+
+  return res.json({
+    success: true,
+    message: 'รีเซ็ตรหัสผ่านใหม่สำเร็จแล้ว สามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที',
+  });
+});
+
 app.get('/api/auth/me', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const user = store.findUserById(req.user!.id);
   if (!user) {
@@ -550,6 +676,7 @@ app.post('/api/feedback', (req: Request, res: Response) => {
       comment: (comment || '').trim(),
       issueReport: (issueReport || '').trim(),
       isAnonymous: Boolean(isAnonymous),
+      helpfulUserIds: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -574,6 +701,30 @@ app.post('/api/feedback', (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Error submitting feedback:', err);
     return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกแบบประเมิน' });
+  }
+});
+
+// Toggle "Helpful" vote for a feedback item (strictly 1 vote per user)
+app.post('/api/feedback/:id/helpful', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const feedbackId = req.params.id;
+    const userId = req.user!.id;
+
+    const result = store.toggleHelpful(feedbackId, userId);
+    if (!result) {
+      return res.status(404).json({ error: 'ไม่พบความคิดเห็นที่ระบุ' });
+    }
+
+    return res.json({
+      success: true,
+      helpfulCount: result.helpfulCount,
+      userVoted: result.userVoted,
+      message: result.userVoted ? 'บันทึกคะแนนเป็นประโยชน์แล้ว' : 'ยกเลิกคะแนนเป็นประโยชน์แล้ว',
+      feedback: result.feedback,
+    });
+  } catch (err: any) {
+    console.error('Error toggling helpful vote:', err);
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกคะแนนเป็นประโยชน์' });
   }
 });
 

@@ -78,6 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
           >
             <span>ประเมินความพึงพอใจ</span>
           </button>
+
           {user?.role === 'admin' && (
             <button
               onClick={() => setActiveTab('analytics')}
@@ -269,6 +270,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, openAut
           >
             ประเมินความพึงพอใจ
           </button>
+
           {user?.role === 'admin' && (
             <button
               onClick={() => {

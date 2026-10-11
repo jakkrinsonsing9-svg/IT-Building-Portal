@@ -10,7 +10,7 @@
       "phone": "0812345678",
       "department": "ศูนย์บริการสารสนเทศและเทคโนโลยี (IT Operations)",
       "createdAt": "2026-10-09T00:00:00.000Z",
-      "passwordHash": "$2b$10$xSV3h1f4ZiCuxPrQ5ClvIOALU.FkZT5IUWLxD2H464tYbneETAGR6"
+      "passwordHash": "$2b$10$zbEutfT6e9NUGSM5hWGwEuW/SEJ.ODPw9ctMMrlxaKBJpUOV8z0Sm"
     },
     {
       "id": "usr-1791643258468-49ws",
@@ -331,6 +331,172 @@
   "equipmentRequests": [],
   "auditLogs": [
     {
+      "id": "log-1791734230220-kz0s",
+      "timestamp": "2026-10-11T15:57:10.220Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบสำเร็จ: ผู้ดูแลระบบไอที (System Administrator) (ADMIN)",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791734230061-8jda",
+      "timestamp": "2026-10-11T15:57:10.061Z",
+      "eventType": "AUTH_LOGIN",
+      "userEmail": "admin@it.ac.th",
+      "ipAddress": "127.0.0.1",
+      "action": "เปลี่ยนรหัสผ่านสำเร็จ (Password Reset via OTP): admin@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791734229870-n1ua",
+      "timestamp": "2026-10-11T15:57:09.870Z",
+      "eventType": "AUTH_LOGIN_FAILED",
+      "userEmail": "admin@it.ac.th",
+      "ipAddress": "127.0.0.1",
+      "action": "รีเซ็ตรหัสผ่านล้มเหลว: รหัส OTP ไม่ถูกต้อง ครั้งที่ 1/5 สำหรับ admin@it.ac.th",
+      "severity": "warning"
+    },
+    {
+      "id": "log-1791734229845-5h8y",
+      "timestamp": "2026-10-11T15:57:09.845Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ขอรหัส OTP สำหรับรีเซ็ตรหัสผ่านไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791733976563-9zlw",
+      "timestamp": "2026-10-11T15:52:56.563Z",
+      "eventType": "AUTH_LOGIN_FAILED",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบล้มเหลว: ไม่พบบัญชีผู้ใช้ jakkrinsonsing1@gmail.com",
+      "severity": "warning"
+    },
+    {
+      "id": "log-1791733973395-ryqe",
+      "timestamp": "2026-10-11T15:52:53.395Z",
+      "eventType": "AUTH_LOGIN_FAILED",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบล้มเหลว: ไม่พบบัญชีผู้ใช้ jakkrinsonsing1@gmail.com",
+      "severity": "warning"
+    },
+    {
+      "id": "log-1791733966446-60ki",
+      "timestamp": "2026-10-11T15:52:46.446Z",
+      "eventType": "AUTH_LOGIN_FAILED",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบล้มเหลว: ไม่พบบัญชีผู้ใช้ jakkrinsonsing1@gmail.com",
+      "severity": "warning"
+    },
+    {
+      "id": "log-1791733672660-133h",
+      "timestamp": "2026-10-11T15:47:52.660Z",
+      "eventType": "SECURITY_SCAN",
+      "userId": "anon-user",
+      "userEmail": "anonymous@it.ac.th",
+      "userRole": "user",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งแบบประเมินความพึงพอใจสำหรับ ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ (5 ดาว)",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732409325-zppt",
+      "timestamp": "2026-10-11T15:26:49.325Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ยืนยันตัวตนสำเร็จ 2-Factor Authentication (OTP): ผู้ดูแลระบบไอที (System Administrator) (ADMIN)",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732409309-jt6d",
+      "timestamp": "2026-10-11T15:26:49.309Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732401124-699v",
+      "timestamp": "2026-10-11T15:26:41.124Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732396316-t3c7",
+      "timestamp": "2026-10-11T15:26:36.316Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732390526-abpq",
+      "timestamp": "2026-10-11T15:26:30.526Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732386566-do9j",
+      "timestamp": "2026-10-11T15:26:26.566Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732382670-3ukr",
+      "timestamp": "2026-10-11T15:26:22.670Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791732193139-ykdm",
+      "timestamp": "2026-10-11T15:23:13.139Z",
+      "eventType": "SECURITY_SCAN",
+      "userId": "usr-1791644599514-qsmj",
+      "userEmail": "jakkrinsonsing9@gmail.com",
+      "userRole": "user",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งแบบประเมินความพึงพอใจสำหรับ ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ (5 ดาว)",
+      "severity": "info"
+    },
+    {
       "id": "log-1791651095387-1jop",
       "timestamp": "2026-10-10T16:51:35.387Z",
       "eventType": "AUTH_LOGIN",
@@ -608,95 +774,5 @@
       }
     }
   ],
-  "feedbacks": [
-    {
-      "id": "fb-001",
-      "targetType": "room",
-      "targetId": "room-cybersec",
-      "targetName": "ห้องปฏิบัติการ Cybersecurity (LAB-CYBER)",
-      "userId": "usr-1791643777391-4qqy",
-      "userName": "นายสมเกียรติ มั่นคง",
-      "userEmail": "test2@example.com",
-      "userRole": "user",
-      "rating": 5,
-      "cleanlinessRating": 5,
-      "speedRating": 5,
-      "staffRating": 5,
-      "comment": "ห้องปฏิบัติการ Cybersecurity อุปกรณ์แรงมาก มีจอ SOC แสดงสถานะแบบเรียลไทม์ เหมาะสำหรับการทำ Lab แข่งขัน CTF และทดสอบเครือข่ายความมั่นคงปลอดภัยมากครับ",
-      "issueReport": "",
-      "isAnonymous": false,
-      "createdAt": "2026-10-10T11:20:00.000Z"
-    },
-    {
-      "id": "fb-002",
-      "targetType": "equipment",
-      "targetId": "eq-gpu-01",
-      "targetName": "การ์ดจอประมวลผลสูง (NVIDIA GeForce RTX 4080 16GB)",
-      "userId": "usr-1791643258468-49ws",
-      "userName": "วิศวกรข้อมูลไอที",
-      "userEmail": "test@example.com",
-      "userRole": "user",
-      "rating": 5,
-      "cleanlinessRating": 5,
-      "speedRating": 5,
-      "staffRating": 5,
-      "comment": "ยืมการ์ดจอ RTX 4080 มาใช้เทรนโมเดล AI ในโครงงานวิจัยของสำนักวิชา เจ้าหน้าที่ตรวจสอบอุปกรณ์และให้คำแนะนำดีมาก การ์ดจอทำงานได้เสถียร 100%",
-      "issueReport": "",
-      "isAnonymous": true,
-      "createdAt": "2026-10-10T12:45:00.000Z"
-    },
-    {
-      "id": "fb-003",
-      "targetType": "room",
-      "targetId": "room-lounge-1",
-      "targetName": "ห้องนั่งเล่น 1 (LOUNGE-101 - Co-Working)",
-      "userId": "usr-1791644599514-qsmj",
-      "userName": "นศ.ไอที ชั้นปีที่ 3",
-      "userEmail": "student3@it.ac.th",
-      "userRole": "user",
-      "rating": 4,
-      "cleanlinessRating": 5,
-      "speedRating": 4,
-      "staffRating": 5,
-      "comment": "ห้องนั่งเล่นโซฟาสบายมาก แอร์เย็นฉ่ำ เหมาะกับการนั่งอ่านหนังสือและทำงานกลุ่ม ปลั๊กไฟตามโต๊ะเยอะสะดวกสบายมาก",
-      "issueReport": "",
-      "isAnonymous": true,
-      "createdAt": "2026-10-10T13:10:00.000Z"
-    },
-    {
-      "id": "fb-004",
-      "targetType": "equipment",
-      "targetId": "eq-cam-01",
-      "targetName": "กล้องและอุปกรณ์เสริมต่างๆ (4K Pro Streaming Kit)",
-      "userId": "usr-1791643777391-4qqy",
-      "userName": "นายสมเกียรติ มั่นคง",
-      "userEmail": "test2@example.com",
-      "userRole": "user",
-      "rating": 5,
-      "cleanlinessRating": 5,
-      "speedRating": 5,
-      "staffRating": 5,
-      "comment": "ชุดไมค์และกล้อง 4K คมชัดมาก ทั้งไฟสตูดิโอและ Capture Card ครบเซ็ต เอาไปจัดสัมมนาสดของภาควิชาผ่านไปด้วยดี",
-      "issueReport": "",
-      "isAnonymous": false,
-      "createdAt": "2026-10-10T14:30:00.000Z"
-    },
-    {
-      "id": "fb-005",
-      "targetType": "overall",
-      "targetName": "ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ",
-      "userId": "usr-admin-001",
-      "userName": "อาจารย์ประจำสำนักวิชา",
-      "userEmail": "lecturer@it.ac.th",
-      "userRole": "user",
-      "rating": 5,
-      "cleanlinessRating": 5,
-      "speedRating": 5,
-      "staffRating": 5,
-      "comment": "ระบบจองห้องและยืมอุปกรณ์ออนไลน์เวอร์ชันใหม่ช่วยลดขั้นตอนเอกสารลงได้มาก นักศึกษาและอาจารย์ตรวจสอบสต็อกได้ทันที สะดวกและโปร่งใสมากครับ",
-      "issueReport": "",
-      "isAnonymous": false,
-      "createdAt": "2026-10-10T15:00:00.000Z"
-    }
-  ]
+  "feedbacks": []
 }

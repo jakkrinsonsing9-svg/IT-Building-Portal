@@ -171,6 +171,7 @@ export interface SatisfactionFeedback {
   comment: string;
   issueReport?: string;
   isAnonymous: boolean;
+  helpfulUserIds?: string[];
   createdAt: string;
 }
 

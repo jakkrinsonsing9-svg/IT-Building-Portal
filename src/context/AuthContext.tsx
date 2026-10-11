@@ -18,6 +18,8 @@ interface AuthContextType {
   login: (email: string, password: string, require2FA?: boolean) => Promise<LoginResult>;
   verifyOtp: (email: string, otp: string) => Promise<{ success: boolean; error?: string }>;
   resendOtp: (email: string) => Promise<{ success: boolean; devOtpCode?: string; message?: string; error?: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; maskedEmail?: string; devOtpCode?: string; message?: string; error?: string }>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   register: (data: {
     email: string;
     password: string;
@@ -214,6 +216,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || 'ขอรีเซ็ตรหัสผ่านไม่สำเร็จ' };
+        }
+        return {
+          success: true,
+          maskedEmail: data.maskedEmail,
+          devOtpCode: data.devOtpCode,
+          message: data.message,
+        };
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch (err) {
+      console.warn('Server unavailable for forgot password, falling back to client storage:', err);
+      return clientStorage.forgotPassword(email);
+    }
+  };
+
+  const resetPassword = async (email: string, otp: string, newPassword: string) => {
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, newPassword }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || 'รีเซ็ตรหัสผ่านไม่สำเร็จ' };
+        }
+        return { success: true, message: data.message };
+      }
+      throw new Error(`Non-JSON response: ${res.status}`);
+    } catch (err) {
+      console.warn('Server unavailable for reset password, falling back to client storage:', err);
+      return clientStorage.resetPassword(email, otp, newPassword);
+    }
+  };
+
   const register = async (userData: {
     email: string;
     password: string;
@@ -286,6 +339,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         verifyOtp,
         resendOtp,
+        forgotPassword,
+        resetPassword,
         register,
         logout,
         switchDemoAccount,

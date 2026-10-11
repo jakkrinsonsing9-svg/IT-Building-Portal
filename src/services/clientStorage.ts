@@ -491,6 +491,49 @@ class ClientStorageService {
     };
   }
 
+  public forgotPassword(email: string): { success: boolean; maskedEmail?: string; devOtpCode?: string; error?: string } {
+    const cleanEmail = email.trim().toLowerCase();
+    const users = this.getStorageItem<UserWithSensitive[]>(USERS_KEY, []);
+    const user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (!user) {
+      return { success: false, error: 'ไม่พบบัญชีผู้ใช้ที่ใช้อีเมลนี้ในระบบ' };
+    }
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otps = this.getStorageItem<Record<string, { code: string; expiresAt: number; userId: string; purpose?: string }>>(OTP_STORE_KEY, {});
+    otps[`reset_${cleanEmail}`] = {
+      code: otpCode,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      userId: user.id,
+      purpose: 'PASSWORD_RESET',
+    };
+    this.setStorageItem(OTP_STORE_KEY, otps);
+    return {
+      success: true,
+      maskedEmail: maskEmail(user.email),
+      devOtpCode: otpCode,
+    };
+  }
+
+  public resetPassword(email: string, otpCode: string, newPassword: string): { success: boolean; error?: string } {
+    const cleanEmail = email.trim().toLowerCase();
+    const otps = this.getStorageItem<Record<string, { code: string; expiresAt: number; userId: string; purpose?: string }>>(OTP_STORE_KEY, {});
+    const record = otps[`reset_${cleanEmail}`];
+    if (!record || record.code !== otpCode.trim() || Date.now() > record.expiresAt) {
+      return { success: false, error: 'รหัส OTP ไม่ถูกต้องหรือหมดอายุ' };
+    }
+    const users = this.getStorageItem<UserWithSensitive[]>(USERS_KEY, []);
+    const user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (!user) {
+      return { success: false, error: 'ไม่พบบัญชีผู้ใช้ในระบบ' };
+    }
+    const salt = bcrypt.genSaltSync(10);
+    user.passwordHash = bcrypt.hashSync(newPassword, salt);
+    this.setStorageItem(USERS_KEY, users);
+    delete otps[`reset_${cleanEmail}`];
+    this.setStorageItem(OTP_STORE_KEY, otps);
+    return { success: true };
+  }
+
   public getUserById(id: string): MaskedUserView | null {
     const users = this.getStorageItem<UserWithSensitive[]>(USERS_KEY, []);
     const found = users.find((u) => u.id === id);
@@ -771,107 +814,46 @@ class ClientStorageService {
     this.setStorageItem(AUDIT_LOGS_KEY, logs);
   }
 
-  // --- Satisfaction Feedbacks ---
+  // --- Satisfaction Feedbacks (No mock data, empty initially) ---
   public getFeedbacks(): SatisfactionFeedback[] {
-    const defaultFbs: SatisfactionFeedback[] = [
-      {
-        id: 'fb-001',
-        targetType: 'room',
-        targetId: 'room-cybersec',
-        targetName: 'ห้องปฏิบัติการ Cybersecurity (LAB-CYBER)',
-        userId: 'usr-1791643777391-4qqy',
-        userName: 'นายสมเกียรติ มั่นคง',
-        userEmail: 'test2@example.com',
-        userRole: 'user',
-        rating: 5,
-        cleanlinessRating: 5,
-        speedRating: 5,
-        staffRating: 5,
-        comment: 'ห้องปฏิบัติการ Cybersecurity อุปกรณ์แรงมาก มีจอ SOC แสดงสถานะแบบเรียลไทม์ เหมาะสำหรับการทำ Lab แข่งขัน CTF และทดสอบความมั่นคงปลอดภัยเครือข่ายมากครับ',
-        issueReport: '',
-        isAnonymous: false,
-        createdAt: '2026-10-10T11:20:00.000Z',
-      },
-      {
-        id: 'fb-002',
-        targetType: 'equipment',
-        targetId: 'eq-gpu-01',
-        targetName: 'การ์ดจอประมวลผลสูง (NVIDIA GeForce RTX 4080 16GB)',
-        userId: 'usr-1791643258468-49ws',
-        userName: 'วิศวกรข้อมูลไอที',
-        userEmail: 'test@example.com',
-        userRole: 'user',
-        rating: 5,
-        cleanlinessRating: 5,
-        speedRating: 5,
-        staffRating: 5,
-        comment: 'ยืมการ์ดจอ RTX 4080 มาใช้เทรนโมเดล AI ในโครงงานวิจัยของสำนักวิชา เจ้าหน้าที่ส่งมอบรวดเร็ว การ์ดจอทำงานได้เสถียร 100%',
-        issueReport: '',
-        isAnonymous: true,
-        createdAt: '2026-10-10T12:45:00.000Z',
-      },
-      {
-        id: 'fb-003',
-        targetType: 'room',
-        targetId: 'room-lounge-1',
-        targetName: 'ห้องนั่งเล่น 1 (LOUNGE-101 - Co-Working)',
-        userId: 'usr-1791644599514-qsmj',
-        userName: 'นศ.ไอที ชั้นปีที่ 3',
-        userEmail: 'student3@it.ac.th',
-        userRole: 'user',
-        rating: 4,
-        cleanlinessRating: 5,
-        speedRating: 4,
-        staffRating: 5,
-        comment: 'ห้องนั่งเล่นโซฟาสบายมาก แอร์เย็นฉ่ำ เหมาะกับการนั่งอ่านหนังสือและทำงานกลุ่ม ปลั๊กไฟตามโต๊ะเยอะสะดวกสบายมาก',
-        issueReport: '',
-        isAnonymous: true,
-        createdAt: '2026-10-10T13:10:00.000Z',
-      },
-      {
-        id: 'fb-004',
-        targetType: 'equipment',
-        targetId: 'eq-cam-01',
-        targetName: 'กล้องและอุปกรณ์เสริมต่างๆ (4K Pro Streaming Kit)',
-        userId: 'usr-1791643777391-4qqy',
-        userName: 'นายสมเกียรติ มั่นคง',
-        userEmail: 'test2@example.com',
-        userRole: 'user',
-        rating: 5,
-        cleanlinessRating: 5,
-        speedRating: 5,
-        staffRating: 5,
-        comment: 'ชุดไมค์และกล้อง 4K คมชัดมาก ทั้งไฟสตูดิโอและ Capture Card ครบเซ็ต เอาไปจัดสัมมนาสดของภาควิชาผ่านไปด้วยดี',
-        issueReport: '',
-        isAnonymous: false,
-        createdAt: '2026-10-10T14:30:00.000Z',
-      },
-      {
-        id: 'fb-005',
-        targetType: 'overall',
-        targetName: 'ภาพรวมการบริการอาคารเทคโนโลยีสารสนเทศ',
-        userId: 'usr-admin-001',
-        userName: 'อาจารย์ประจำสำนักวิชา',
-        userEmail: 'lecturer@it.ac.th',
-        userRole: 'user',
-        rating: 5,
-        cleanlinessRating: 5,
-        speedRating: 5,
-        staffRating: 5,
-        comment: 'ระบบจองห้องและยืมอุปกรณ์ออนไลน์เวอร์ชันใหม่ช่วยลดขั้นตอนเอกสารลงได้มาก นักศึกษาและอาจารย์ตรวจสอบสต็อกได้ทันที สะดวกและโปร่งใสมากครับ',
-        issueReport: '',
-        isAnonymous: false,
-        createdAt: '2026-10-10T15:00:00.000Z',
-      },
-    ];
-    return this.getStorageItem<SatisfactionFeedback[]>(FEEDBACK_KEY, defaultFbs);
+    return this.getStorageItem<SatisfactionFeedback[]>(FEEDBACK_KEY, []);
   }
 
   public addFeedback(fb: SatisfactionFeedback): SatisfactionFeedback {
     const list = this.getFeedbacks();
+    if (!fb.helpfulUserIds) {
+      fb.helpfulUserIds = [];
+    }
     list.unshift(fb);
     this.setStorageItem(FEEDBACK_KEY, list);
     return fb;
+  }
+
+  public toggleHelpful(feedbackId: string, userId: string): { helpfulCount: number; userVoted: boolean; feedback: SatisfactionFeedback } | null {
+    const list = this.getFeedbacks();
+    const item = list.find((f) => f.id === feedbackId);
+    if (!item) return null;
+
+    if (!Array.isArray(item.helpfulUserIds)) {
+      item.helpfulUserIds = [];
+    }
+
+    const index = item.helpfulUserIds.indexOf(userId);
+    let userVoted = false;
+    if (index > -1) {
+      item.helpfulUserIds.splice(index, 1);
+      userVoted = false;
+    } else {
+      item.helpfulUserIds.push(userId);
+      userVoted = true;
+    }
+
+    this.setStorageItem(FEEDBACK_KEY, list);
+    return {
+      helpfulCount: item.helpfulUserIds.length,
+      userVoted,
+      feedback: item,
+    };
   }
 
   public getFeedbackStats(): FeedbackSummaryStats {

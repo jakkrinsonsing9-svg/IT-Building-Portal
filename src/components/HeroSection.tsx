@@ -3,7 +3,7 @@ import { Sparkles, CalendarCheck2, ShieldCheck, ArrowRight, Laptop, Cpu, Server,
 import { useAuth } from '../context/AuthContext.tsx';
 
 interface HeroSectionProps {
-  onNavigate: (tab: 'rooms' | 'equipment' | 'my-records' | 'feedback' | 'analytics' | 'owasp' | 'admin') => void;
+  onNavigate: (tab: 'rooms' | 'equipment' | 'my-records' | 'feedback' | 'analytics' | 'admin') => void;
   openAuthModal: () => void;
 }
 
@@ -70,14 +70,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
                   <span>กราฟสถิติ (Admin Data Viz)</span>
                 </button>
               )}
-
-              <button
-                onClick={() => onNavigate('owasp')}
-                className="px-4 py-2.5 rounded-xl font-medium text-xs text-emerald-300 glass-card hover:bg-emerald-500/15 border border-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>ตรวจสอบ OWASP</span>
-              </button>
             </div>
 
             {/* User status preview */}
