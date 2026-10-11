@@ -331,6 +331,26 @@
   "equipmentRequests": [],
   "auditLogs": [
     {
+      "id": "log-1791740295123-xv98",
+      "timestamp": "2026-10-11T17:38:15.123Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัสยืนยัน OTP สำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1791740281453-sbb3",
+      "timestamp": "2026-10-11T17:38:01.453Z",
+      "eventType": "AUTH_LOGIN_FAILED",
+      "userEmail": "student1@it.edu",
+      "ipAddress": "127.0.0.1",
+      "action": "ขอรีเซ็ตรหัสผ่านล้มเหลว: ไม่พบอีเมล student1@it.edu ในระบบ",
+      "severity": "warning"
+    },
+    {
       "id": "log-1791734230220-kz0s",
       "timestamp": "2026-10-11T15:57:10.220Z",
       "eventType": "AUTH_LOGIN",

@@ -210,10 +210,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const res = await forgotPassword(forgotEmail.trim());
       if (res.success) {
         setOtpMaskedEmail(res.maskedEmail || forgotEmail.trim());
-        setDevOtpHint(res.devOtpCode || null);
+        setDevOtpHint(null);
         setResendCooldown(60);
         setForgotStep('reset');
-        setSuccessMsg(`ระบบได้ส่งรหัส OTP 6 หลักสำหรับรีเซ็ตรหัสผ่านไปยัง ${res.maskedEmail || forgotEmail.trim()} แล้ว`);
+        setSuccessMsg(`ระบบได้ส่งรหัส OTP 6 หลักสำหรับรีเซ็ตรหัสผ่านไปยัง ${res.maskedEmail || forgotEmail.trim()} เรียบร้อยแล้ว`);
       } else {
         setError(res.error || 'ไม่สามารถส่งรหัส OTP ได้');
       }
@@ -274,8 +274,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const res = await forgotPassword(forgotEmail.trim());
       if (res.success) {
         setResendCooldown(60);
-        setDevOtpHint(res.devOtpCode || null);
-        setSuccessMsg(`ส่งรหัส OTP ใหม่ไปยัง ${res.maskedEmail || forgotEmail} เรียบร้อยแล้ว`);
+        setDevOtpHint(null);
+        setSuccessMsg(`ส่งรหัส OTP ใหม่ไปยังอีเมล ${res.maskedEmail || forgotEmail} เรียบร้อยแล้ว`);
       } else {
         setError(res.error || 'ขอรหัส OTP ไม่สำเร็จ');
       }
@@ -480,41 +480,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             ) : (
               /* Forgot step 2: Reset with OTP */
               <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
-                <div className="p-4 rounded-xl bg-slate-950/60 border border-cyan-500/30 text-center">
-                  <div className="text-xs text-slate-400 mb-1">รหัส OTP สำหรับรีเซ็ตรหัสผ่านถูกส่งไปยัง</div>
-                  <div className="text-sm font-semibold text-cyan-300 font-mono">{otpMaskedEmail}</div>
-
-                  {/* Dev Mode OTP Banner for convenience */}
-                  {devOtpHint && (
-                    <div className="mt-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-left">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-amber-300 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                          <span>รหัส OTP ในระบบ (Dev Mode):</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setForgotOtp(devOtpHint)}
-                          className="text-[10px] font-bold text-amber-200 bg-amber-500/30 hover:bg-amber-500/50 px-2 py-0.5 rounded cursor-pointer transition-colors"
-                        >
-                          คลิกเพื่อกรอกทันที
-                        </button>
-                      </div>
-                      <div className="text-center mt-1.5">
-                        <span className="font-mono text-xl tracking-[0.3em] font-black text-amber-300 bg-black/40 px-3 py-1 rounded border border-amber-400/30">
-                          {devOtpHint}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-amber-400/80 mt-1 text-center">
-                        (รหัสมีอายุ 5 นาที)
-                      </div>
-                    </div>
-                  )}
+                <div className="p-4 rounded-xl bg-slate-950/70 border border-cyan-500/30 text-center">
+                  <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-cyan-400">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs text-slate-300 font-medium mb-1">
+                    ระบบได้ส่งรหัสยืนยัน OTP ไปยังอีเมลของคุณแล้ว
+                  </div>
+                  <div className="text-sm font-semibold text-cyan-300 font-mono bg-cyan-950/40 py-1 px-3 rounded-lg border border-cyan-800/40 inline-block mb-2">
+                    {otpMaskedEmail}
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-sm mx-auto">
+                    กรุณาเปิดกล่องจดหมายอีเมลของคุณ (รวมถึงโฟลเดอร์ Spam/Junk) แล้วนำรหัส OTP 6 หลักมากรอกด้านล่างเพื่อตั้งรหัสผ่านใหม่ (รหัสมีอายุ 5 นาที)
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5 text-center">
-                    กรอกรหัส OTP 6 หลัก
+                    กรอกรหัส OTP 6 หลักที่ได้รับทางอีเมล
                   </label>
                   <input
                     type="text"

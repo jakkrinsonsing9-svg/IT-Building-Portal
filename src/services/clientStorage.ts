@@ -491,7 +491,7 @@ class ClientStorageService {
     };
   }
 
-  public forgotPassword(email: string): { success: boolean; maskedEmail?: string; devOtpCode?: string; error?: string } {
+  public forgotPassword(email: string): { success: boolean; maskedEmail?: string; error?: string } {
     const cleanEmail = email.trim().toLowerCase();
     const users = this.getStorageItem<UserWithSensitive[]>(USERS_KEY, []);
     const user = users.find((u) => u.email.toLowerCase() === cleanEmail);
@@ -510,7 +510,6 @@ class ClientStorageService {
     return {
       success: true,
       maskedEmail: maskEmail(user.email),
-      devOtpCode: otpCode,
     };
   }
 

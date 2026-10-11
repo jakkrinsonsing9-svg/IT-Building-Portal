@@ -9,6 +9,7 @@ import { supabaseManager, SUPABASE_SQL_SCHEMA } from './server/supabase.ts';
 import { runOWASPSecurityScan } from './server/owasp.ts';
 import { maskCitizenId, maskPhone, maskEmail, maskStudentOrStaffId } from './src/utils/masking.ts';
 import { RoomBooking, EquipmentRequest, UserWithSensitive } from './src/types/index.ts';
+import { sendPasswordResetEmail, getSentEmailsForUser } from './server/email.ts';
 
 dotenv.config();
 
@@ -453,9 +454,9 @@ app.post('/api/auth/resend-otp', (req: Request, res: Response) => {
 });
 
 // ----------------------------------------------------
-// Forgot & Reset Password Flow (ระบบรีเซ็ตรหัสผ่านด้วย OTP)
+// Forgot & Reset Password Flow (ระบบรีเซ็ตรหัสผ่านด้วย OTP ทางอีเมล)
 // ----------------------------------------------------
-app.post('/api/auth/forgot-password', (req: Request, res: Response) => {
+app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'กรุณาระบุอีเมลที่ใช้ลงทะเบียน' });
@@ -492,18 +493,48 @@ app.post('/api/auth/forgot-password', (req: Request, res: Response) => {
     userEmail: user.email,
     userRole: user.role,
     ipAddress: getClientIp(req),
-    action: `ขอรหัส OTP สำหรับรีเซ็ตรหัสผ่านไปยัง ${maskEmail(user.email)}`,
+    action: `ส่งรหัสยืนยัน OTP สำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ${maskEmail(user.email)}`,
     severity: 'info',
   });
 
-  console.log(`[PASSWORD RESET OTP] Code for ${user.email}: ${otpCode}`);
+  // Dispatch email directly to the recipient's email address
+  const emailDispatch = await sendPasswordResetEmail({
+    to: user.email,
+    recipientName: user.name,
+    otpCode,
+    ipAddress: getClientIp(req),
+  });
 
+  console.log(`[PASSWORD RESET] Email dispatched to ${maskEmail(user.email)} (mode: ${emailDispatch.mode})`);
+
+  // Explicitly NEVER return devOtpCode in the response for security
   return res.json({
     success: true,
     maskedEmail: maskEmail(user.email),
     expiresInSeconds: 300,
-    devOtpCode: otpCode,
-    message: `ส่งรหัส OTP สำหรับรีเซ็ตรหัสผ่านไปยัง ${maskEmail(user.email)} แล้ว`,
+    emailMode: emailDispatch.mode,
+    message: `ส่งรหัส OTP สำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ${maskEmail(user.email)} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมายของคุณ`,
+  });
+});
+
+// Endpoint to preview sent email for testing/preview when SMTP is not connected
+app.get('/api/auth/email-outbox-preview', (req: Request, res: Response) => {
+  const email = (req.query.email as string) || '';
+  if (!email) {
+    return res.status(400).json({ error: 'Missing email' });
+  }
+  const sent = getSentEmailsForUser(email);
+  return res.json({
+    emails: sent.map(e => ({
+      id: e.id,
+      to: maskEmail(e.to),
+      subject: e.subject,
+      status: e.status,
+      sentAt: e.sentAt,
+      // Only include full content in simulation mode for debugging/local testing
+      htmlContent: e.status === 'queued_simulation' ? e.htmlContent : undefined,
+      textContent: e.status === 'queued_simulation' ? e.textContent : undefined,
+    })),
   });
 });
 
