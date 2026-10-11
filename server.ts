@@ -31,6 +31,13 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// Static assets serving for images (both dev and prod, desktop and mobile)
+const assetsDir = path.resolve(process.cwd(), 'src/assets');
+if (fs.existsSync(assetsDir)) {
+  app.use('/src/assets', express.static(assetsDir, { maxAge: '1d' }));
+  app.use('/assets', express.static(assetsDir, { maxAge: '1d' }));
+}
+
 // In-memory OTP storage for 2FA verification
 interface OTPRecord {
   code: string;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, CalendarCheck2, ShieldCheck, ArrowRight, Laptop, Cpu, Server, Eye, TrendingUp, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import heroBuildingImg from '../assets/images/it_building_hero_1791567692594.jpg';
 
 interface HeroSectionProps {
   onNavigate: (tab: 'rooms' | 'equipment' | 'my-records' | 'feedback' | 'analytics' | 'admin') => void;
@@ -94,15 +95,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, openAuthMo
           </div>
 
           {/* Right Image Card */}
-          <div className="lg:col-span-5">
-            <div className="relative rounded-2xl overflow-hidden border border-white/15 shadow-2xl group">
+          <div className="lg:col-span-5 w-full mt-4 lg:mt-0">
+            <div className="relative rounded-2xl overflow-hidden border border-white/15 shadow-2xl group w-full bg-slate-900/60">
               <img
-                src="/src/assets/images/it_building_hero_1791567692594.jpg"
+                src={heroBuildingImg}
                 alt="อาคารคณะเทคโนโลยีสารสนเทศ IT Building"
-                className="w-full h-72 sm:h-80 object-cover transform group-hover:scale-105 transition-transform duration-700"
-                referrerPolicy="no-referrer"
+                className="w-full min-h-[220px] sm:min-h-[280px] h-60 sm:h-72 md:h-80 object-cover object-center transform group-hover:scale-105 transition-transform duration-700 block"
+                loading="eager"
+                decoding="async"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.dataset.fallback) {
+                    target.dataset.fallback = '1';
+                    target.src = '/src/assets/images/it_building_hero_1791567692594.jpg';
+                  } else if (target.dataset.fallback === '1') {
+                    target.dataset.fallback = '2';
+                    target.src = 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80';
+                  }
+                }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent pointer-events-none" />
               <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl backdrop-blur-md bg-slate-950/70 border border-white/10 text-xs">
                 <p className="font-semibold text-white">Faculty of Information Technology Building</p>
                 <p className="text-slate-400 text-[11px] mt-0.5">
