@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext.tsx';
 import {
   Database,
@@ -73,8 +74,6 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({ isOpen, onClose })
       setAlert(null);
     }
   }, [isOpen]);
-
-  if (!isOpen) return null;
 
   // Handle test connection
   const handleTestConnection = async () => {
@@ -210,10 +209,26 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({ isOpen, onClose })
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-gradient-to-r from-emerald-950/50 via-slate-900 to-cyan-950/50 flex items-center justify-between">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 15 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="relative w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10"
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-800 bg-gradient-to-r from-emerald-950/50 via-slate-900 to-cyan-950/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white">
               <Database className="w-5 h-5" />
@@ -551,12 +566,14 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({ isOpen, onClose })
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors text-xs font-medium"
+            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors text-xs font-medium cursor-pointer"
           >
             ปิดหน้าต่าง
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

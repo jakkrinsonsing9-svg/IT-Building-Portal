@@ -86,3 +86,49 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.28);
 }
+
+/* Tactile Click & Press Animations */
+button,
+[role="button"],
+.interactive-click {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.16s ease,
+              background-color 0.16s ease,
+              border-color 0.16s ease,
+              color 0.16s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+.interactive-click:active:not(:disabled) {
+  transform: scale(0.965);
+}
+
+/* Card Press Effect */
+.glass-card-press {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
+}
+
+.glass-card-press:active {
+  transform: scale(0.985);
+}
+
+/* Smooth keyframe fallback for view switching */
+@keyframes fadeInView {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-view-fade {
+  animation: fadeInView 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

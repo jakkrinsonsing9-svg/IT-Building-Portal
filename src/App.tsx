@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { Navbar } from './components/Navbar.tsx';
 import { HeroSection } from './components/HeroSection.tsx';
@@ -74,71 +75,91 @@ function AppContent() {
               หน้าแรก
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
-            <span className="text-slate-200 capitalize">
-              {activeTab === 'hero' && 'ภาพรวมอาคารไอที'}
-              {activeTab === 'rooms' && 'จองห้องปฏิบัติการ'}
-              {activeTab === 'equipment' && 'ขอยืมของส่วนกลาง'}
-              {activeTab === 'my-records' && 'รายการคำขอของฉัน'}
-              {activeTab === 'feedback' && 'ประเมินความพึงพอใจการใช้งาน (CSAT)'}
-              {activeTab === 'analytics' && 'แดชบอร์ดสถิติการใช้งาน'}
-              {activeTab === 'admin' && 'ระบบผู้ดูแลระบบ (Admin)'}
-            </span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={activeTab}
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 6 }}
+                transition={{ duration: 0.18 }}
+                className="text-slate-200 capitalize"
+              >
+                {activeTab === 'hero' && 'ภาพรวมอาคารไอที'}
+                {activeTab === 'rooms' && 'จองห้องปฏิบัติการ'}
+                {activeTab === 'equipment' && 'ขอยืมของส่วนกลาง'}
+                {activeTab === 'my-records' && 'รายการคำขอของฉัน'}
+                {activeTab === 'feedback' && 'ประเมินความพึงพอใจการใช้งาน (CSAT)'}
+                {activeTab === 'analytics' && 'แดชบอร์ดสถิติการใช้งาน'}
+                {activeTab === 'owasp' && 'ศูนย์ความปลอดภัย OWASP'}
+                {activeTab === 'admin' && 'ระบบผู้ดูแลระบบ (Admin)'}
+              </motion.span>
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* View Routing */}
-        {activeTab === 'hero' && (
-          <HeroSection
-            onNavigate={(tab) => setActiveTab(tab)}
-            openAuthModal={() => setAuthModalOpen(true)}
-          />
-        )}
+        {/* View Routing with Smooth Page Transition Animation */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 14, scale: 0.995 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.995 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {activeTab === 'hero' && (
+              <HeroSection
+                onNavigate={(tab) => setActiveTab(tab)}
+                openAuthModal={() => setAuthModalOpen(true)}
+              />
+            )}
 
-        {activeTab === 'rooms' && (
-          <RoomBookingSection
-            onBookingSuccess={() => {
-              triggerRefresh();
-              setActiveTab('my-records');
-            }}
-            openAuthModal={() => setAuthModalOpen(true)}
-          />
-        )}
+            {activeTab === 'rooms' && (
+              <RoomBookingSection
+                onBookingSuccess={() => {
+                  triggerRefresh();
+                  setActiveTab('my-records');
+                }}
+                openAuthModal={() => setAuthModalOpen(true)}
+              />
+            )}
 
-        {activeTab === 'equipment' && (
-          <EquipmentRequestSection
-            onRequestSuccess={() => {
-              triggerRefresh();
-              setActiveTab('my-records');
-            }}
-            openAuthModal={() => setAuthModalOpen(true)}
-          />
-        )}
+            {activeTab === 'equipment' && (
+              <EquipmentRequestSection
+                onRequestSuccess={() => {
+                  triggerRefresh();
+                  setActiveTab('my-records');
+                }}
+                openAuthModal={() => setAuthModalOpen(true)}
+              />
+            )}
 
-        {activeTab === 'my-records' && (
-          <MyRecordsCRUD
-            openAuthModal={() => setAuthModalOpen(true)}
-            refreshTrigger={refreshTrigger}
-            onOpenFeedback={(target) => {
-              setFeedbackTarget(target);
-              setActiveTab('feedback');
-            }}
-          />
-        )}
+            {activeTab === 'my-records' && (
+              <MyRecordsCRUD
+                openAuthModal={() => setAuthModalOpen(true)}
+                refreshTrigger={refreshTrigger}
+                onOpenFeedback={(target) => {
+                  setFeedbackTarget(target);
+                  setActiveTab('feedback');
+                }}
+              />
+            )}
 
-        {activeTab === 'feedback' && (
-          <SatisfactionSection
-            openAuthModal={() => setAuthModalOpen(true)}
-            preselectedTarget={feedbackTarget}
-          />
-        )}
+            {activeTab === 'feedback' && (
+              <SatisfactionSection
+                openAuthModal={() => setAuthModalOpen(true)}
+                preselectedTarget={feedbackTarget}
+              />
+            )}
 
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
+            {activeTab === 'analytics' && <AnalyticsDashboard />}
 
-        {activeTab === 'owasp' && <OWASPSecurityCenter />}
+            {activeTab === 'owasp' && <OWASPSecurityCenter />}
 
-        {activeTab === 'admin' && (
-          <AdminDashboard onOpenSupabaseModal={() => setSupabaseModalOpen(true)} />
-        )}
+            {activeTab === 'admin' && (
+              <AdminDashboard onOpenSupabaseModal={() => setSupabaseModalOpen(true)} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Footer */}

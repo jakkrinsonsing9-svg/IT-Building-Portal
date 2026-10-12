@@ -35,6 +35,12 @@ app.use(express.json());
 // Static assets serving for images (both dev and prod, desktop and mobile)
 const assetsDir = path.resolve(process.cwd(), 'src/assets');
 if (fs.existsSync(assetsDir)) {
+  app.use((req, res, next) => {
+    if (req.url.includes('?import') || req.url.includes('&import')) {
+      return next();
+    }
+    next();
+  });
   app.use('/src/assets', express.static(assetsDir, { maxAge: '1d' }));
   app.use('/assets', express.static(assetsDir, { maxAge: '1d' }));
 }
