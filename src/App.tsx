@@ -6,7 +6,6 @@ import { HeroSection } from './components/HeroSection.tsx';
 import { RoomBookingSection } from './components/RoomBookingSection.tsx';
 import { EquipmentRequestSection } from './components/EquipmentRequestSection.tsx';
 import { MyRecordsCRUD } from './components/MyRecordsCRUD.tsx';
-import { OWASPSecurityCenter } from './components/OWASPSecurityCenter.tsx';
 import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard.tsx';
 import { SatisfactionSection } from './components/SatisfactionSection.tsx';
@@ -90,7 +89,6 @@ function AppContent() {
                 {activeTab === 'my-records' && 'รายการคำขอของฉัน'}
                 {activeTab === 'feedback' && 'ประเมินความพึงพอใจการใช้งาน (CSAT)'}
                 {activeTab === 'analytics' && 'แดชบอร์ดสถิติการใช้งาน'}
-                {activeTab === 'owasp' && 'ศูนย์ความปลอดภัย OWASP'}
                 {activeTab === 'admin' && 'ระบบผู้ดูแลระบบ (Admin)'}
               </motion.span>
             </AnimatePresence>
@@ -153,8 +151,6 @@ function AppContent() {
 
             {activeTab === 'analytics' && <AnalyticsDashboard />}
 
-            {activeTab === 'owasp' && <OWASPSecurityCenter />}
-
             {activeTab === 'admin' && (
               <AdminDashboard onOpenSupabaseModal={() => setSupabaseModalOpen(true)} />
             )}
@@ -168,9 +164,16 @@ function AppContent() {
           <p>
             © 2026 Faculty of Information Technology · ระบบจองห้องและยืมของส่วนกลางตึกไอที
           </p>
-          <p className="text-slate-400">
-            ระบบบริการทรัพยากรส่วนกลางคณะเทคโนโลยีสารสนเทศ
-          </p>
+          <div className="flex items-center gap-3">
+            <a
+              href="/system_and_pentest_report.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-400 hover:text-cyan-300 underline font-medium transition-colors"
+            >
+              📥 เปิด/บันทึกรายงาน Pent Test (PDF 6 คะแนน)
+            </a>
+          </div>
         </div>
       </footer>
 

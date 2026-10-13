@@ -54,6 +54,23 @@ if (fs.existsSync(assetsDir)) {
   app.use('/assets', express.static(assetsDir, { maxAge: '1d' }));
 }
 
+// Direct file download routes for Pentest and System Test Report
+app.get('/api/download/report', (_req: Request, res: Response) => {
+  const filePath = path.resolve(process.cwd(), 'public/system_and_pentest_report.html');
+  if (fs.existsSync(filePath)) {
+    return res.download(filePath, 'รายงานผลการทดสอบระบบและ_Pentest_IT_Building.html');
+  }
+  return res.status(404).send('Report file not found');
+});
+
+app.get('/api/download/report-md', (_req: Request, res: Response) => {
+  const filePath = path.resolve(process.cwd(), '.aistudio/artifacts/brain/c076df36-bb28-46f4-99c3-fd40b68ea5ef/system_and_pentest_report.md');
+  if (fs.existsSync(filePath)) {
+    return res.download(filePath, 'รายงานผลการทดสอบระบบและ_Pentest_IT_Building.md');
+  }
+  return res.status(404).send('Markdown report file not found');
+});
+
 // In-memory OTP storage for 2FA verification
 interface OTPRecord {
   code: string;
