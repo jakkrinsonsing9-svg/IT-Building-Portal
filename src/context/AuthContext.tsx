@@ -18,7 +18,14 @@ interface AuthContextType {
   login: (email: string, password: string, require2FA?: boolean) => Promise<LoginResult>;
   verifyOtp: (email: string, otp: string) => Promise<{ success: boolean; error?: string }>;
   resendOtp: (email: string) => Promise<{ success: boolean; devOtpCode?: string; message?: string; error?: string }>;
-  forgotPassword: (email: string) => Promise<{ success: boolean; maskedEmail?: string; message?: string; error?: string }>;
+  forgotPassword: (email: string) => Promise<{
+    success: boolean;
+    maskedEmail?: string;
+    emailMode?: 'smtp' | 'simulated';
+    isSmtpConfigured?: boolean;
+    message?: string;
+    error?: string;
+  }>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   register: (data: {
     email: string;
@@ -233,6 +240,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {
           success: true,
           maskedEmail: data.maskedEmail,
+          emailMode: data.emailMode,
+          isSmtpConfigured: data.isSmtpConfigured,
           message: data.message,
         };
       }

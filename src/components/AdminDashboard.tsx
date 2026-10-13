@@ -18,8 +18,28 @@ import {
   RefreshCw,
   Search,
   Filter,
-  Database
+  Image as ImageIcon,
+  Upload,
+  Trash2,
+  Camera
 } from 'lucide-react';
+
+const ROOM_IMAGE_PRESETS = [
+  { label: 'ห้องแล็บมาตรฐาน', url: '/src/assets/images/it_lab_interior_1791567709768.jpg' },
+  { label: 'Cybersecurity Lab', url: '/src/assets/images/cybersecurity_lab_1791646568756.jpg' },
+  { label: 'Network & System Lab', url: '/src/assets/images/network_lab_1791646586644.jpg' },
+  { label: 'Media Studio', url: '/src/assets/images/media_studio_1791646607451.jpg' },
+  { label: 'Student Lounge', url: '/src/assets/images/student_lounge_1791646630711.jpg' },
+];
+
+const EQUIPMENT_IMAGE_PRESETS = [
+  { label: 'อุปกรณ์ไอทีทั่วไป', url: '/src/assets/images/it_tech_devices_1791567729951.jpg' },
+  { label: 'กล้องสตูดิโอ 4K', url: '/src/assets/images/equipment_camera_1791648975276.jpg' },
+  { label: 'การ์ดจอ eGPU RTX', url: '/src/assets/images/equipment_gpu_1791648914162.jpg' },
+  { label: 'คีย์บอร์ดกลไก', url: '/src/assets/images/equipment_keyboard_1791648890529.jpg' },
+  { label: 'เมาส์เกมมิ่ง Ergonomic', url: '/src/assets/images/equipment_mouse_1791648865268.jpg' },
+  { label: 'สายแลน & Network', url: '/src/assets/images/equipment_lancable_1791648939295.jpg' },
+];
 
 interface AdminDashboardProps {
   onOpenSupabaseModal?: () => void;
@@ -46,6 +66,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
   const [newRoomFloor, setNewRoomFloor] = useState(3);
   const [newRoomCapacity, setNewRoomCapacity] = useState(30);
   const [newRoomDescription, setNewRoomDescription] = useState('');
+  const [newRoomImage, setNewRoomImage] = useState<string>('');
 
   // Add Equipment form state
   const [newEqName, setNewEqName] = useState('');
@@ -53,8 +74,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
   const [newEqSerial, setNewEqSerial] = useState('');
   const [newEqQty, setNewEqQty] = useState(2);
   const [newEqSpecs, setNewEqSpecs] = useState('');
+  const [newEqImage, setNewEqImage] = useState<string>('');
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Helper to read and auto-resize uploaded image file into lightweight base64 data URL
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'กรุณาเลือกไฟล์รูปภาพเท่านั้น (JPG, PNG, WebP)' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setter(dataUrl);
+        } else {
+          setter(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const fetchAdminData = async () => {
     if (!token || user?.role !== 'admin') return;
@@ -198,6 +263,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
           capacity: newRoomCapacity,
           description: newRoomDescription,
           equipment: ['Interactive Display', 'Gigabit LAN'],
+          imageUrl: newRoomImage || '/src/assets/images/it_lab_interior_1791567709768.jpg',
         }),
       });
 
@@ -208,6 +274,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
           setNewRoomName('');
           setNewRoomCode('');
           setNewRoomDescription('');
+          setNewRoomImage('');
           fetchAdminData();
         } else {
           setMessage({ type: 'error', text: 'ไม่สามารถเพิ่มห้องใหม่ได้' });
@@ -226,12 +293,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         type: 'lab',
         equipment: ['Interactive Display', 'Gigabit LAN'],
         status: 'available',
-        imageUrl: '/src/assets/images/it_lab_interior_1791567709768.jpg',
+        imageUrl: newRoomImage || '/src/assets/images/it_lab_interior_1791567709768.jpg',
       });
       setMessage({ type: 'success', text: 'เพิ่มห้องปฏิบัติการใหม่เรียบร้อยแล้ว (Local Secured)' });
       setNewRoomName('');
       setNewRoomCode('');
       setNewRoomDescription('');
+      setNewRoomImage('');
       fetchAdminData();
     }
   };
@@ -253,6 +321,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
           serialNumber: newEqSerial,
           totalQuantity: newEqQty,
           specs: newEqSpecs,
+          imageUrl: newEqImage || '/src/assets/images/it_tech_devices_1791567729951.jpg',
         }),
       });
 
@@ -263,6 +332,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
           setNewEqName('');
           setNewEqSerial('');
           setNewEqSpecs('');
+          setNewEqImage('');
           fetchAdminData();
         } else {
           setMessage({ type: 'error', text: 'ไม่สามารถเพิ่มอุปกรณ์ได้' });
@@ -280,12 +350,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         totalQuantity: newEqQty,
         availableQuantity: newEqQty,
         location: 'ห้องพัสดุไอที อาคาร 3',
-        imageUrl: '/src/assets/images/it_tech_devices_1791567729951.jpg',
+        imageUrl: newEqImage || '/src/assets/images/it_tech_devices_1791567729951.jpg',
       });
       setMessage({ type: 'success', text: 'เพิ่มอุปกรณ์ส่วนกลางใหม่เรียบร้อยแล้ว (Local Secured)' });
       setNewEqName('');
       setNewEqSerial('');
       setNewEqSpecs('');
+      setNewEqImage('');
       fetchAdminData();
     }
   };
@@ -320,17 +391,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
         </div>
 
         <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
-          {onOpenSupabaseModal && (
-            <button
-              onClick={onOpenSupabaseModal}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 flex items-center gap-2 border border-emerald-500/40 cursor-pointer shadow-sm"
-              title="ตั้งค่าเชื่อมต่อฐานข้อมูล Supabase PostgreSQL (ฟรี)"
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>ฐานข้อมูล Supabase</span>
-            </button>
-          )}
-
           <button
             onClick={fetchAdminData}
             className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 glass-card hover:bg-white/10 flex items-center gap-2 border border-white/10 cursor-pointer"
@@ -665,6 +725,81 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
                   className="w-full glass-input px-3 py-2 rounded-xl text-xs resize-none"
                 />
               </div>
+
+              {/* Room Image Section */}
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-cyan-400" />
+                    <span>รูปภาพห้องปฏิบัติการ (Room Photo)</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">อัปโหลดจากเครื่อง หรือเลือกภาพตัวอย่าง</span>
+                </div>
+
+                {/* Preview Thumbnail */}
+                {newRoomImage ? (
+                  <div className="relative rounded-xl overflow-hidden border border-cyan-500/40 h-32 group bg-slate-950">
+                    <img
+                      src={newRoomImage}
+                      alt="Room Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewRoomImage('')}
+                        className="px-3 py-1.5 rounded-lg bg-rose-500/90 hover:bg-rose-600 text-white text-xs font-medium flex items-center gap-1.5 shadow-md cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>ลบรูปภาพ</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-white/15 hover:border-cyan-400/50 rounded-xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-950/40 hover:bg-slate-950/70 group">
+                    <Upload className="w-5 h-5 text-cyan-400 mb-1 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs text-slate-200 font-medium">คลิกเพื่ออัปโหลดรูปภาพจากอุปกรณ์</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">รองรับ JPG, PNG, WebP (ย่อขนาดอัตโนมัติ)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageFileChange(e, setNewRoomImage)}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+
+                {/* Preset Chips */}
+                <div className="pt-1">
+                  <span className="text-[10px] text-slate-400 block mb-1">หรือเลือกจากคลังภาพตัวอย่างตึกไอที:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ROOM_IMAGE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.url}
+                        type="button"
+                        onClick={() => setNewRoomImage(preset.url)}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                          newRoomImage === preset.url
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/50 font-semibold shadow-sm'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-white border-white/5'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Or Custom URL */}
+                <input
+                  type="url"
+                  value={newRoomImage}
+                  onChange={(e) => setNewRoomImage(e.target.value)}
+                  placeholder="หรือวาง URL รูปภาพ (https://...)"
+                  className="w-full glass-input px-3 py-1.5 rounded-xl text-[11px] font-mono text-slate-300"
+                />
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-2 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 cursor-pointer shadow-md"
@@ -739,6 +874,81 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
                   className="w-full glass-input px-3 py-2 rounded-xl text-xs"
                 />
               </div>
+
+              {/* Equipment Image Section */}
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-indigo-400" />
+                    <span>รูปภาพครุภัณฑ์/อุปกรณ์ (Equipment Photo)</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">อัปโหลดจากเครื่อง หรือเลือกภาพตัวอย่าง</span>
+                </div>
+
+                {/* Preview Thumbnail */}
+                {newEqImage ? (
+                  <div className="relative rounded-xl overflow-hidden border border-indigo-500/40 h-32 group bg-slate-950">
+                    <img
+                      src={newEqImage}
+                      alt="Equipment Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewEqImage('')}
+                        className="px-3 py-1.5 rounded-lg bg-rose-500/90 hover:bg-rose-600 text-white text-xs font-medium flex items-center gap-1.5 shadow-md cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>ลบรูปภาพ</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-white/15 hover:border-indigo-400/50 rounded-xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-950/40 hover:bg-slate-950/70 group">
+                    <Upload className="w-5 h-5 text-indigo-400 mb-1 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs text-slate-200 font-medium">คลิกเพื่ออัปโหลดรูปภาพจากอุปกรณ์</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">รองรับ JPG, PNG, WebP (ย่อขนาดอัตโนมัติ)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageFileChange(e, setNewEqImage)}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+
+                {/* Preset Chips */}
+                <div className="pt-1">
+                  <span className="text-[10px] text-slate-400 block mb-1">หรือเลือกจากคลังภาพตัวอย่างอุปกรณ์:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {EQUIPMENT_IMAGE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.url}
+                        type="button"
+                        onClick={() => setNewEqImage(preset.url)}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                          newEqImage === preset.url
+                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-400/50 font-semibold shadow-sm'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-white border-white/5'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Or Custom URL */}
+                <input
+                  type="url"
+                  value={newEqImage}
+                  onChange={(e) => setNewEqImage(e.target.value)}
+                  placeholder="หรือวาง URL รูปภาพ (https://...)"
+                  className="w-full glass-input px-3 py-1.5 rounded-xl text-[11px] font-mono text-slate-300"
+                />
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-2 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 cursor-pointer shadow-md"
@@ -807,6 +1017,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenSupabaseMo
           </div>
         </div>
       )}
+
     </div>
   );
 };

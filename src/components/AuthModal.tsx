@@ -18,6 +18,10 @@ import {
   Sparkles,
   Eye,
   EyeOff,
+  AlertTriangle,
+  Copy,
+  Check,
+  Inbox
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -47,6 +51,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [emailMode, setEmailMode] = useState<'smtp' | 'simulated'>('simulated');
+  const [isSmtpConfigured, setIsSmtpConfigured] = useState<boolean>(false);
+  const [mailboxModalOpen, setMailboxModalOpen] = useState(false);
+  const [mailboxEmails, setMailboxEmails] = useState<any[]>([]);
+  const [loadingMailbox, setLoadingMailbox] = useState(false);
+  const [copiedOtp, setCopiedOtp] = useState(false);
+
+  const fetchSimulatedEmails = async (targetEmail: string) => {
+    setLoadingMailbox(true);
+    try {
+      const res = await fetch(`/api/auth/email-outbox-preview?email=${encodeURIComponent(targetEmail)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMailboxEmails(data.emails || []);
+        setIsSmtpConfigured(Boolean(data.isSmtpConfigured));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch simulated emails:', err);
+    } finally {
+      setLoadingMailbox(false);
+    }
+  };
+
+  const handleOpenSimulatedMailbox = () => {
+    setMailboxModalOpen(true);
+    fetchSimulatedEmails(forgotEmail.trim());
+  };
 
   // Form states
   const [email, setEmail] = useState('');
@@ -209,10 +240,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const res = await forgotPassword(forgotEmail.trim());
       if (res.success) {
         setOtpMaskedEmail(res.maskedEmail || forgotEmail.trim());
+        setEmailMode(res.emailMode || 'simulated');
+        setIsSmtpConfigured(Boolean(res.isSmtpConfigured));
         setDevOtpHint(null);
         setResendCooldown(60);
         setForgotStep('reset');
-        setSuccessMsg(`ระบบได้ส่งรหัส OTP 6 หลักสำหรับรีเซ็ตรหัสผ่านไปยัง ${res.maskedEmail || forgotEmail.trim()} เรียบร้อยแล้ว`);
+        setSuccessMsg(res.message || `ระบบได้ส่งรหัส OTP 6 หลักสำหรับรีเซ็ตรหัสผ่านไปยัง ${res.maskedEmail || forgotEmail.trim()} เรียบร้อยแล้ว`);
       } else {
         setError(res.error || 'ไม่สามารถส่งรหัส OTP ได้');
       }
@@ -500,15 +533,53 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <Mail className="w-5 h-5" />
                   </div>
                   <div className="text-xs text-slate-300 font-medium mb-1">
-                    ระบบได้ส่งรหัสยืนยัน OTP ไปยังอีเมลของคุณแล้ว
+                    ระบบได้ส่งรหัสยืนยัน OTP สำหรับกู้คืนบัญชีแล้ว
                   </div>
                   <div className="text-sm font-semibold text-cyan-300 font-mono bg-cyan-950/40 py-1 px-3 rounded-lg border border-cyan-800/40 inline-block mb-2">
                     {otpMaskedEmail}
                   </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed max-w-sm mx-auto">
-                    กรุณาเปิดกล่องจดหมายอีเมลของคุณ (รวมถึงโฟลเดอร์ Spam/Junk) แล้วนำรหัส OTP 6 หลักมากรอกด้านล่างเพื่อตั้งรหัสผ่านใหม่ (รหัสมีอายุ 5 นาที)
+                    {emailMode === 'smtp'
+                      ? 'ระบบได้ส่งอีเมลจริงไปยังกล่องจดหมายของคุณแล้ว กรุณาเปิดกล่องจดหมาย (รวมถึงโฟลเดอร์ Spam/Junk) แล้วนำรหัส OTP 6 หลักมากรอกด้านล่าง'
+                      : 'ระบบกำลังทำงานในโหมดจำลอง (ยังไม่ได้เชื่อมต่อ SMTP ผู้ส่งจริง) จดหมาย OTP ถูกส่งเข้ากล่องจดหมายจำลองของระบบแล้ว'}
                   </p>
                 </div>
+
+                {/* Email Delivery Mode Notice & Mailbox Shortcut */}
+                {emailMode === 'simulated' ? (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-left space-y-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-amber-300">สาเหตุที่ยังไม่แจ้งเตือนเข้า Gmail จริง:</span>
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono border border-amber-500/30">
+                            ยังไม่ได้เชื่อมต่อ SMTP Server
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                          เซิร์ฟเวอร์ยังไม่มีบัญชีผู้ส่งของ Gmail เพื่อส่งอีเมลข้ามอินเทอร์เน็ต ระบบจึงสร้างจดหมายไว้ใน <strong>กล่องจดหมายจำลอง (Outbox)</strong> คุณสามารถคลิกดูรหัส OTP เพื่อทดสอบได้ทันทีด้านล่างนี้:
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenSimulatedMailbox}
+                      className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                    >
+                      <Inbox className="w-4 h-4 text-amber-400" />
+                      <span>📬 เปิดดูกล่องจดหมายจำลอง (คลิกเพื่อดูและกรอกรหัส OTP)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-left flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-emerald-300">ส่งอีเมลผ่าน SMTP สำเร็จแล้ว</p>
+                      <p className="text-[11px] text-emerald-400/80">กรุณาเปิดแอป Gmail หรือกล่องจดหมายเพื่อรับรหัส OTP 6 หลัก</p>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5 text-center">
@@ -931,6 +1002,117 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </p>
         </div>
           </motion.div>
+
+          {/* Simulated Mailbox Preview Overlay Modal */}
+          {mailboxModalOpen && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMailboxModalOpen(false)}
+                className="fixed inset-0 bg-black/80 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative w-full max-w-2xl bg-slate-900 border border-amber-500/30 rounded-2xl p-6 text-slate-100 shadow-2xl z-10 max-h-[85vh] flex flex-col"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                      <Inbox className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">กล่องจดหมายจำลอง (Simulated Mailbox)</h3>
+                      <p className="text-[11px] text-slate-400">สำหรับตรวจสอบอีเมลและรหัส OTP ระหว่างที่ยังไม่ได้ต่อ SMTP จริง</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMailboxModalOpen(false)}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="py-4 overflow-y-auto space-y-4 flex-1">
+                  {loadingMailbox ? (
+                    <div className="py-12 text-center text-xs text-slate-400">
+                      กำลังดึงข้อมูลอีเมลล่าสุดจาก Outbox...
+                    </div>
+                  ) : mailboxEmails.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-400">
+                      ไม่พบอีเมลที่ส่งถึง {forgotEmail} กรุณากดขอรหัส OTP ใหม่อีกครั้ง
+                    </div>
+                  ) : (
+                    mailboxEmails.map((mail, idx) => (
+                      <div key={mail.id || idx} className="p-4 rounded-xl bg-slate-950/80 border border-white/10 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs pb-2 border-b border-white/5">
+                          <div>
+                            <span className="text-slate-400">ถึง (To): </span>
+                            <span className="text-cyan-300 font-mono font-medium">{forgotEmail}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {new Date(mail.sentAt).toLocaleTimeString('th-TH')}
+                          </span>
+                        </div>
+
+                        <div className="text-xs font-semibold text-white">
+                          หัวข้อ: {mail.subject}
+                        </div>
+
+                        {mail.otpCode && (
+                          <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-3">
+                            <div>
+                              <div className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">
+                                รหัสยืนยัน OTP 6 หลัก
+                              </div>
+                              <div className="text-2xl font-black font-mono tracking-widest text-amber-200">
+                                {mail.otpCode}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setForgotOtp(mail.otpCode);
+                                setCopiedOtp(true);
+                                setTimeout(() => setCopiedOtp(false), 2000);
+                                setMailboxModalOpen(false);
+                              }}
+                              className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
+                            >
+                              {copiedOtp ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedOtp ? 'กรอกเรียบร้อย!' : 'นำรหัสนี้ไปกรอกทันที'}</span>
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-slate-300 whitespace-pre-line bg-slate-900/60 p-3 rounded-lg border border-white/5 font-mono text-[11px] leading-relaxed">
+                          {mail.textContent}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 text-[11px]">
+                    * หากต้องการให้ส่งเข้า Gmail จริง แอดมินสามารถกำหนดค่า SMTP ได้ที่แถบแอดมิน
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMailboxModalOpen(false)}
+                    className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs cursor-pointer"
+                  >
+                    ปิดหน้าต่าง
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
       )}
     </AnimatePresence>

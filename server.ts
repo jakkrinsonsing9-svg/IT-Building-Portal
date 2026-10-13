@@ -9,7 +9,15 @@ import { supabaseManager, SUPABASE_SQL_SCHEMA } from './server/supabase.ts';
 import { runOWASPSecurityScan } from './server/owasp.ts';
 import { maskCitizenId, maskPhone, maskEmail, maskStudentOrStaffId } from './src/utils/masking.ts';
 import { RoomBooking, EquipmentRequest, UserWithSensitive } from './src/types/index.ts';
-import { sendPasswordResetEmail, getSentEmailsForUser } from './server/email.ts';
+import {
+  sendPasswordResetEmail,
+  getSentEmailsForUser,
+  isSmtpConfigured,
+  getSmtpConfig,
+  setSmtpConfig,
+  testSmtpConnection,
+  SmtpConfig
+} from './server/email.ts';
 
 dotenv.config();
 
@@ -30,7 +38,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Static assets serving for images (both dev and prod, desktop and mobile)
 const assetsDir = path.resolve(process.cwd(), 'src/assets');
@@ -513,13 +522,16 @@ app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
 
   console.log(`[PASSWORD RESET] Email dispatched to ${maskEmail(user.email)} (mode: ${emailDispatch.mode})`);
 
-  // Explicitly NEVER return devOtpCode in the response for security
+  // Return email mode info so frontend can display status and simulation preview if needed
   return res.json({
     success: true,
     maskedEmail: maskEmail(user.email),
     expiresInSeconds: 300,
     emailMode: emailDispatch.mode,
-    message: `ส่งรหัส OTP สำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ${maskEmail(user.email)} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมายของคุณ`,
+    isSmtpConfigured: isSmtpConfigured(),
+    message: emailDispatch.mode === 'smtp'
+      ? `ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมลจริง ${maskEmail(user.email)} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมายของคุณ`
+      : `ระบบสร้างรหัส OTP สำหรับ ${maskEmail(user.email)} เรียบร้อยแล้ว (โหมดจำลองการส่ง เนื่องจากยังไม่ได้เชื่อมต่อ SMTP)`,
   });
 });
 
@@ -531,15 +543,17 @@ app.get('/api/auth/email-outbox-preview', (req: Request, res: Response) => {
   }
   const sent = getSentEmailsForUser(email);
   return res.json({
+    isSmtpConfigured: isSmtpConfigured(),
     emails: sent.map(e => ({
       id: e.id,
       to: maskEmail(e.to),
       subject: e.subject,
       status: e.status,
       sentAt: e.sentAt,
-      // Only include full content in simulation mode for debugging/local testing
-      htmlContent: e.status === 'queued_simulation' ? e.htmlContent : undefined,
-      textContent: e.status === 'queued_simulation' ? e.textContent : undefined,
+      // Provide content so user can preview and unblock testing
+      htmlContent: e.htmlContent,
+      textContent: e.textContent,
+      otpCode: e.status === 'queued_simulation' ? e.otpCode : undefined,
     })),
   });
 });
@@ -1259,6 +1273,72 @@ app.post('/api/admin/reset-data', requireAdmin, (_req: AuthenticatedRequest, res
 });
 
 // ----------------------------------------------------
+// Admin SMTP Email Settings & Test Endpoints
+// ----------------------------------------------------
+app.get('/api/admin/smtp', requireAdmin, (_req: AuthenticatedRequest, res: Response) => {
+  return res.json({
+    isConfigured: isSmtpConfigured(),
+    config: getSmtpConfig(),
+  });
+});
+
+app.post('/api/admin/smtp', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  const { host, port, secure, user, pass, from } = req.body;
+  if (!host || !user || !pass) {
+    return res.status(400).json({ error: 'กรุณากรอกข้อมูล SMTP ให้ครบถ้วน (Host, User/Email, Password)' });
+  }
+
+  setSmtpConfig({
+    host: String(host).trim(),
+    port: parseInt(port) || 587,
+    secure: Boolean(secure),
+    user: String(user).trim(),
+    pass: String(pass).trim(),
+    from: from ? String(from).trim() : `"IT Building Portal" <${String(user).trim()}>`,
+  });
+
+  store.addAuditLog({
+    eventType: 'ADMIN_ACTION',
+    userId: req.user!.id,
+    userEmail: req.user!.email,
+    userRole: req.user!.role,
+    ipAddress: getClientIp(req),
+    action: `แอดมินอัปเดตการตั้งค่าระบบส่งอีเมล SMTP Server (${host})`,
+    severity: 'info',
+  });
+
+  return res.json({
+    success: true,
+    message: 'บันทึกการตั้งค่าระบบส่งอีเมล SMTP เรียบร้อยแล้ว',
+    config: getSmtpConfig(),
+  });
+});
+
+app.post('/api/admin/smtp/test', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  const { recipient, host, port, secure, user, pass } = req.body;
+  const targetEmail = recipient || req.user!.email;
+
+  let configOverride: SmtpConfig | undefined = undefined;
+  if (host && user && pass) {
+    configOverride = {
+      host: String(host).trim(),
+      port: parseInt(port) || 587,
+      secure: Boolean(secure),
+      user: String(user).trim(),
+      pass: String(pass).trim(),
+      from: `"IT Building Portal" <${String(user).trim()}>`,
+    };
+  }
+
+  const result = await testSmtpConnection(targetEmail, configOverride);
+  if (result.success) {
+    return res.json({ success: true, message: result.message });
+  } else {
+    return res.status(400).json({ success: false, error: result.error || result.message });
+  }
+});
+
+// ----------------------------------------------------
 // Analytics & Weekly Data Visualization Endpoint (Admin Only)
 // ----------------------------------------------------
 app.get('/api/analytics/weekly', requireAdmin, (_req: AuthenticatedRequest, res: Response) => {
@@ -1402,7 +1482,7 @@ app.get('/api/admin/audit-logs', requireAdmin, (_req: AuthenticatedRequest, res:
 });
 
 app.post('/api/admin/rooms', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
-  const { name, code, floor, capacity, type, description, equipment } = req.body;
+  const { name, code, floor, capacity, type, description, equipment, imageUrl } = req.body;
   if (!name || !code || !floor || !capacity) {
     return res.status(400).json({ error: 'กรุณากรอกข้อมูลห้องให้ครบถ้วน' });
   }
@@ -1417,7 +1497,9 @@ app.post('/api/admin/rooms', requireAdmin, (req: AuthenticatedRequest, res: Resp
     description: description?.trim() || '',
     equipment: Array.isArray(equipment) ? equipment : [],
     status: 'available' as const,
-    imageUrl: '/src/assets/images/it_lab_interior_1791567709768.jpg',
+    imageUrl: imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0
+      ? imageUrl.trim()
+      : '/src/assets/images/it_lab_interior_1791567709768.jpg',
   };
 
   store.addRoom(newRoom);
@@ -1425,7 +1507,7 @@ app.post('/api/admin/rooms', requireAdmin, (req: AuthenticatedRequest, res: Resp
 });
 
 app.post('/api/admin/equipment', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
-  const { name, category, serialNumber, specs, totalQuantity, location } = req.body;
+  const { name, category, serialNumber, specs, totalQuantity, location, imageUrl } = req.body;
   if (!name || !category || !serialNumber || !totalQuantity) {
     return res.status(400).json({ error: 'กรุณากรอกข้อมูลอุปกรณ์ให้ครบถ้วน' });
   }
@@ -1440,7 +1522,9 @@ app.post('/api/admin/equipment', requireAdmin, (req: AuthenticatedRequest, res: 
     totalQuantity: qty,
     availableQuantity: qty,
     location: location?.trim() || 'ตึกไอที ห้องศูนย์พัสดุ',
-    imageUrl: '/src/assets/images/it_tech_devices_1791567729951.jpg',
+    imageUrl: imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0
+      ? imageUrl.trim()
+      : '/src/assets/images/it_tech_devices_1791567729951.jpg',
   };
 
   store.addEquipment(newEquipment);

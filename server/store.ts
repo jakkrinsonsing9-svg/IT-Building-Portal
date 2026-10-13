@@ -43,6 +43,30 @@ function getInitialData(): DatabaseSchema {
       createdAt: new Date().toISOString(),
       passwordHash: adminHash,
     },
+    {
+      id: 'usr-user-002',
+      email: 'jakkrinsonsing1@gmail.com',
+      name: 'Jakkrin Sonsing',
+      role: 'user',
+      studentOrStaffId: 'STD-65010023',
+      citizenId: '1100200987654',
+      phone: '0891234567',
+      department: 'สาขาวิทยาการคอมพิวเตอร์',
+      createdAt: new Date().toISOString(),
+      passwordHash: bcrypt.hashSync('User@Pass1234', salt),
+    },
+    {
+      id: 'usr-user-003',
+      email: 't14583925@gmail.com',
+      name: 'IT Member Account',
+      role: 'user',
+      studentOrStaffId: 'STD-65010088',
+      citizenId: '1100200456789',
+      phone: '0867890123',
+      department: 'สาขาเทคโนโลยีสารสนเทศ',
+      createdAt: new Date().toISOString(),
+      passwordHash: bcrypt.hashSync('User@Pass1234', salt),
+    },
   ];
 
   const rooms: Room[] = [

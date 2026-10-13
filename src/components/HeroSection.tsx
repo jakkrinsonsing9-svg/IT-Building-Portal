@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, type Variants } from 'motion/react';
 import { Sparkles, CalendarCheck2, ShieldCheck, ArrowRight, Laptop, Cpu, Server, Eye, TrendingUp, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 
@@ -10,7 +10,7 @@ interface HeroSectionProps {
   openAuthModal: () => void;
 }
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -21,12 +21,12 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 18 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.45, ease: 'easeOut' },
   },
 };
 

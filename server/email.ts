@@ -18,8 +18,71 @@ export interface SentEmailRecord {
 // In-memory record of sent emails for audit and in-app mailbox preview
 const sentEmailsOutbox: SentEmailRecord[] = [];
 
-// Create nodemailer transporter if SMTP environment variables are configured
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from?: string;
+}
+
+let activeSmtpConfig: SmtpConfig | null = null;
+
+// Initialize from env or verified production credentials
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  activeSmtpConfig = {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587,
+    secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM || `"IT Building Portal" <${process.env.SMTP_USER}>`,
+  };
+} else {
+  activeSmtpConfig = {
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    user: 't14583925@gmail.com',
+    pass: 'tzjyninmxkhbrjje',
+    from: '"IT Building Portal" <t14583925@gmail.com>',
+  };
+}
+
+export function isSmtpConfigured(): boolean {
+  return !!activeSmtpConfig;
+}
+
+export function getSmtpConfig(): { host: string; port: number; secure: boolean; user: string; from?: string } | null {
+  if (!activeSmtpConfig) return null;
+  return {
+    host: activeSmtpConfig.host,
+    port: activeSmtpConfig.port,
+    secure: activeSmtpConfig.secure,
+    user: activeSmtpConfig.user,
+    from: activeSmtpConfig.from,
+  };
+}
+
+export function setSmtpConfig(config: SmtpConfig | null) {
+  activeSmtpConfig = config;
+}
+
+// Create nodemailer transporter from active configuration or env
 function createTransporter() {
+  if (activeSmtpConfig) {
+    return nodemailer.createTransport({
+      host: activeSmtpConfig.host,
+      port: activeSmtpConfig.port,
+      secure: activeSmtpConfig.secure,
+      auth: {
+        user: activeSmtpConfig.user,
+        pass: activeSmtpConfig.pass,
+      },
+    });
+  }
+
   const host = process.env.SMTP_HOST;
   const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
   const user = process.env.SMTP_USER;
@@ -39,6 +102,49 @@ function createTransporter() {
   }
 
   return null;
+}
+
+export async function testSmtpConnection(
+  testRecipient: string,
+  configOverride?: SmtpConfig
+): Promise<{ success: boolean; message: string; error?: string }> {
+  const config = configOverride || activeSmtpConfig;
+  if (!config) {
+    return { success: false, message: 'ยังไม่ได้ระบุข้อมูลการเชื่อมต่อ SMTP' };
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+  });
+
+  try {
+    // First verify connection
+    await transporter.verify();
+    // Then send a test email
+    await transporter.sendMail({
+      from: config.from || `"IT Building Portal" <${config.user}>`,
+      to: testRecipient,
+      subject: '[IT Building] ทดสอบการเชื่อมต่อระบบส่งอีเมล (SMTP Test Successful)',
+      text: 'ยินดีด้วย! ระบบส่งอีเมล IT Building Portal เชื่อมต่อกับ SMTP Server สำเร็จเรียบร้อยแล้ว',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; background-color: #0f172a; color: #f8fafc; border-radius: 12px;">
+          <h2 style="color: #38bdf8;">✅ ทดสอบการเชื่อมต่อ SMTP สำเร็จ!</h2>
+          <p>อีเมลฉบับนี้เป็นการยืนยันว่าระบบ IT Building Portal สามารถส่งอีเมลเข้ากล่องจดหมายของคุณได้จริง</p>
+          <p style="font-size: 12px; color: #94a3b8;">ส่งผ่านโฮสต์: ${config.host}:${config.port} (${config.user})</p>
+        </div>
+      `,
+    });
+    return { success: true, message: `ส่งอีเมลทดสอบไปยัง ${testRecipient} สำเร็จเรียบร้อยแล้ว` };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: 'การเชื่อมต่อกับ SMTP ล้มเหลว', error: errorMsg };
+  }
 }
 
 /**
