@@ -10,7 +10,8 @@
       "phone": "0812345678",
       "department": "ศูนย์บริการสารสนเทศและเทคโนโลยี (IT Operations)",
       "createdAt": "2026-10-13T11:59:00.907Z",
-      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyux5U.jrIxEmJ3cfTKStORB3TMU2ZX6fa"
+      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyux5U.jrIxEmJ3cfTKStORB3TMU2ZX6fa",
+      "approvalStatus": "approved"
     },
     {
       "id": "usr-user-002",
@@ -22,7 +23,8 @@
       "phone": "0891234567",
       "department": "สาขาวิทยาการคอมพิวเตอร์",
       "createdAt": "2026-10-13T11:59:00.907Z",
-      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyuQ9Jsb/Cg6T3PJPpS.BObuWsSIQms74q"
+      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyuQ9Jsb/Cg6T3PJPpS.BObuWsSIQms74q",
+      "approvalStatus": "approved"
     },
     {
       "id": "usr-user-003",
@@ -34,7 +36,8 @@
       "phone": "0867890123",
       "department": "สาขาเทคโนโลยีสารสนเทศ",
       "createdAt": "2026-10-13T11:59:01.026Z",
-      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyuQ9Jsb/Cg6T3PJPpS.BObuWsSIQms74q"
+      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyuQ9Jsb/Cg6T3PJPpS.BObuWsSIQms74q",
+      "approvalStatus": "approved"
     }
   ],
   "rooms": [
@@ -295,6 +298,39 @@
   "bookings": [],
   "equipmentRequests": [],
   "auditLogs": [
+    {
+      "id": "log-1792034740306-6tcg",
+      "timestamp": "2026-10-15T03:25:40.306Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "user",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัสยืนยัน OTP สำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ja***1@gmail.com",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792034371933-c807",
+      "timestamp": "2026-10-15T03:19:31.933Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "user",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัสยืนยัน OTP สำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ja***1@gmail.com",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792034148152-xhv3",
+      "timestamp": "2026-10-15T03:15:48.152Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "user",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัสยืนยัน OTP สำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ja***1@gmail.com",
+      "severity": "info"
+    },
     {
       "id": "log-1791892744858-2e2r",
       "timestamp": "2026-10-13T11:59:04.858Z",

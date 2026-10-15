@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import {
   User,
   UserWithSensitive,
+  UserApprovalStatus,
   Room,
   Equipment,
   RoomBooking,
@@ -40,6 +41,7 @@ function getInitialData(): DatabaseSchema {
       citizenId: '1100200112233',
       phone: '0812345678',
       department: 'ศูนย์บริการสารสนเทศและเทคโนโลยี (IT Operations)',
+      approvalStatus: 'approved',
       createdAt: new Date().toISOString(),
       passwordHash: adminHash,
     },
@@ -52,6 +54,7 @@ function getInitialData(): DatabaseSchema {
       citizenId: '1100200987654',
       phone: '0891234567',
       department: 'สาขาวิทยาการคอมพิวเตอร์',
+      approvalStatus: 'approved',
       createdAt: new Date().toISOString(),
       passwordHash: bcrypt.hashSync('User@Pass1234', salt),
     },
@@ -64,6 +67,7 @@ function getInitialData(): DatabaseSchema {
       citizenId: '1100200456789',
       phone: '0867890123',
       department: 'สาขาเทคโนโลยีสารสนเทศ',
+      approvalStatus: 'approved',
       createdAt: new Date().toISOString(),
       passwordHash: bcrypt.hashSync('User@Pass1234', salt),
     },
@@ -392,6 +396,24 @@ class Store {
     user.passwordHash = passwordHash;
     this.save();
     return true;
+  }
+
+  public updateUserVerification(userId: string, studentOrStaffId: string, department: string): UserWithSensitive | null {
+    const user = this.data.users.find((u) => u.id === userId);
+    if (!user) return null;
+    user.studentOrStaffId = studentOrStaffId.trim();
+    user.department = department.trim();
+    user.approvalStatus = 'pending_approval';
+    this.save();
+    return user;
+  }
+
+  public updateUserApprovalStatus(userId: string, status: UserApprovalStatus): UserWithSensitive | null {
+    const user = this.data.users.find((u) => u.id === userId);
+    if (!user) return null;
+    user.approvalStatus = status;
+    this.save();
+    return user;
   }
 
   public getRooms(): Room[] {

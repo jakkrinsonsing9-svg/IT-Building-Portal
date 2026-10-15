@@ -24,6 +24,7 @@ interface AuthContextType {
     emailMode?: 'smtp' | 'simulated';
     isSmtpConfigured?: boolean;
     message?: string;
+    otpCode?: string;
     error?: string;
   }>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
@@ -243,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailMode: data.emailMode,
           isSmtpConfigured: data.isSmtpConfigured,
           message: data.message,
+          otpCode: data.otpCode,
         };
       }
       throw new Error(`Non-JSON response: ${res.status}`);

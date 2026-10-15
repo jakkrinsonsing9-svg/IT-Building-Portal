@@ -132,9 +132,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           setStep('otp');
           setOtpTargetEmail(res.email || email);
           setOtpMaskedEmail(res.maskedEmail || email);
-          setDevOtpHint(res.devOtpCode || null);
+          setDevOtpHint(null);
+          setOtpCode('');
           setResendCooldown(60);
-          setSuccessMsg(`ระบบส่งรหัสยืนยัน OTP ไปที่ ${res.maskedEmail || email} แล้ว`);
+          setSuccessMsg(`ระบบส่งรหัสยืนยัน OTP ไปยังอีเมล ${res.maskedEmail || email} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมาย`);
         } else {
           setSuccessMsg('เข้าสู่ระบบสำเร็จ');
           setTimeout(() => {
@@ -183,8 +184,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const res = await resendOtp(otpTargetEmail);
       if (res.success) {
         setResendCooldown(60);
-        setDevOtpHint(res.devOtpCode || null);
-        setSuccessMsg(res.message || 'ส่งรหัส OTP ใหม่อีกครั้งเรียบร้อย');
+        setDevOtpHint(null);
+        setOtpCode('');
+        setSuccessMsg(res.message || 'ส่งรหัส OTP ใหม่อีกครั้งไปยังอีเมลจริงเรียบร้อย กรุณาเปิดกล่องจดหมาย');
       } else {
         setError(res.error || 'ส่ง OTP ไม่สำเร็จ');
       }
@@ -243,9 +245,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         setEmailMode(res.emailMode || 'simulated');
         setIsSmtpConfigured(Boolean(res.isSmtpConfigured));
         setDevOtpHint(null);
+        setForgotOtp('');
         setResendCooldown(60);
         setForgotStep('reset');
-        setSuccessMsg(res.message || `ระบบได้ส่งรหัส OTP 6 หลักสำหรับรีเซ็ตรหัสผ่านไปยัง ${res.maskedEmail || forgotEmail.trim()} เรียบร้อยแล้ว`);
+        setSuccessMsg(res.message || `ระบบได้ส่งรหัส OTP 6 หลักสำหรับรีเซ็ตรหัสผ่านไปยังอีเมล ${res.maskedEmail || forgotEmail.trim()} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมาย`);
       } else {
         setError(res.error || 'ไม่สามารถส่งรหัส OTP ได้');
       }
@@ -307,7 +310,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       if (res.success) {
         setResendCooldown(60);
         setDevOtpHint(null);
-        setSuccessMsg(`ส่งรหัส OTP ใหม่ไปยังอีเมล ${res.maskedEmail || forgotEmail} เรียบร้อยแล้ว`);
+        setForgotOtp('');
+        setSuccessMsg(`ส่งรหัส OTP ใหม่ไปยังอีเมลจริง ${res.maskedEmail || forgotEmail} เรียบร้อยแล้ว`);
       } else {
         setError(res.error || 'ขอรหัส OTP ไม่สำเร็จ');
       }
@@ -389,29 +393,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               : 'ระบบยืนยันตัวตนพร้อมรหัส OTP 2FA, Password Hashing (Bcrypt) และ Data Masking'}
           </p>
         </div>
-
-        {/* Quick Demo Switcher Strip - only show on credentials step for login/register */}
-        {step === 'credentials' && mode !== 'forgot' && (
-          <div className="mb-6 p-3 rounded-xl bg-slate-900/80 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                <span>เข้าสู่ระบบด่วนสำหรับทดสอบ</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleDemoSelect('admin')}
-              className="w-full py-2 px-3 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-xs text-amber-200 text-center font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>เข้าสู่ระบบด้วยบัญชีแอดมิน (admin@it.ac.th)</span>
-              <span className="text-[10px] font-mono bg-amber-500/30 px-1.5 py-0.5 rounded text-amber-300">Default Admin</span>
-            </button>
-            <p className="text-[10px] text-slate-400 mt-2 text-center">
-              * ข้อมูลผู้ใช้ใหม่ที่คุณสร้าง จะต้องผ่านระบบยืนยันรหัส OTP 2FA ทุกครั้ง
-            </p>
-          </div>
-        )}
 
         {/* Mode Tabs - only show on credentials step when not in forgot password mode */}
         {step === 'credentials' && mode !== 'forgot' && (
@@ -545,41 +526,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   </p>
                 </div>
 
-                {/* Email Delivery Mode Notice & Mailbox Shortcut */}
-                {emailMode === 'simulated' ? (
-                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-left space-y-2.5">
-                    <div className="flex items-start gap-2.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-semibold text-amber-300">สาเหตุที่ยังไม่แจ้งเตือนเข้า Gmail จริง:</span>
-                          <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono border border-amber-500/30">
-                            ยังไม่ได้เชื่อมต่อ SMTP Server
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-300 leading-relaxed">
-                          เซิร์ฟเวอร์ยังไม่มีบัญชีผู้ส่งของ Gmail เพื่อส่งอีเมลข้ามอินเทอร์เน็ต ระบบจึงสร้างจดหมายไว้ใน <strong>กล่องจดหมายจำลอง (Outbox)</strong> คุณสามารถคลิกดูรหัส OTP เพื่อทดสอบได้ทันทีด้านล่างนี้:
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleOpenSimulatedMailbox}
-                      className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-                    >
-                      <Inbox className="w-4 h-4 text-amber-400" />
-                      <span>📬 เปิดดูกล่องจดหมายจำลอง (คลิกเพื่อดูและกรอกรหัส OTP)</span>
-                    </button>
+                {/* OTP Code Display Box (ส่งรหัส OTP มาในหน้านี้โดยตรง) */}
+                {/* Email Delivery Notification Card */}
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-left flex items-start gap-3">
+                  <Mail className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-emerald-300">ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมลของคุณแล้ว</p>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      กรุณาเปิดแอป Gmail หรือเช็คกล่องจดหมายที่ <strong>{otpMaskedEmail}</strong> (รวมถึงโฟลเดอร์ Junk/Spam) เพื่อรับรหัส OTP 6 หลัก
+                    </p>
                   </div>
-                ) : (
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-left flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="font-semibold text-emerald-300">ส่งอีเมลผ่าน SMTP สำเร็จแล้ว</p>
-                      <p className="text-[11px] text-emerald-400/80">กรุณาเปิดแอป Gmail หรือกล่องจดหมายเพื่อรับรหัส OTP 6 หลัก</p>
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5 text-center">
@@ -698,32 +655,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="text-xs text-slate-400 mb-1">รหัสยืนยันตัวตนถูกส่งไปยัง</div>
               <div className="text-sm font-semibold text-cyan-300 font-mono">{otpMaskedEmail}</div>
 
-              {/* Development Convenience Banner */}
-              {devOtpHint && (
-                <div className="mt-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-amber-300 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>รหัส OTP สำหรับทดสอบในระบบ (Dev Mode):</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setOtpCode(devOtpHint)}
-                      className="text-[10px] font-bold text-amber-200 bg-amber-500/30 hover:bg-amber-500/50 px-2 py-0.5 rounded cursor-pointer transition-colors"
-                    >
-                      คลิกเพื่อกรอกอัตโนมัติ
-                    </button>
-                  </div>
-                  <div className="text-center mt-1.5">
-                    <span className="font-mono text-xl tracking-[0.3em] font-black text-amber-300 bg-black/40 px-3 py-1 rounded border border-amber-400/30">
-                      {devOtpHint}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-amber-400/80 mt-1.5 text-center">
-                    (รหัสมีอายุ 5 นาที และสามารถกดขอรหัสใหม่ได้)
-                  </div>
+              {/* Real Email Delivery Notice */}
+              <div className="mt-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-left flex items-start gap-2.5">
+                <Mail className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-cyan-300">รหัสยืนยัน 2FA ถูกส่งไปยังอีเมลจริงแล้ว</p>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    กรุณาเปิดแอป Gmail หรือเช็คกล่องจดหมายของคุณ แล้วนำรหัส 6 หลักมากรอกยืนยันตัวตนด้านล่าง
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
 
             <div>

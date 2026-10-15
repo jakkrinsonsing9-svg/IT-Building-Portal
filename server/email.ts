@@ -309,6 +309,93 @@ export async function sendPasswordResetEmail(params: {
 }
 
 /**
+ * Dispatch Two-Factor Authentication (2FA) OTP Email via SMTP
+ */
+export async function sendTwoFactorOtpEmail(params: {
+  to: string;
+  recipientName: string;
+  otpCode: string;
+  ipAddress?: string;
+}): Promise<{ success: boolean; mode: 'smtp' | 'simulated'; error?: string }> {
+  const { to, recipientName, otpCode } = params;
+  const subject = `[IT Building] รหัสยืนยัน OTP สำหรับเข้าสู่ระบบ (${otpCode})`;
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 540px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 28px; border-radius: 14px; border: 1px solid #1e293b;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="color: #38bdf8; margin: 0; font-size: 18px;">คณะเทคโนโลยีสารสนเทศ</h2>
+        <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 12px;">ระบบบริการทรัพยากรส่วนกลาง อาคารไอที (IT Building Portal)</p>
+      </div>
+      <div style="background: #1e293b; padding: 22px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 20px;">
+        <p style="margin: 0 0 10px 0; font-size: 13px;">เรียนคุณ <strong>${recipientName}</strong>,</p>
+        <p style="margin: 0 0 16px 0; font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+          มีคำขอเข้าสู่ระบบบัญชีของคุณ ระบบได้ส่งรหัสยืนยันตัวตน 2 ขั้นตอน (2FA OTP) ดังนี้:
+        </p>
+        <div style="text-align: center; margin: 20px 0;">
+          <div style="display: inline-block; background: #0284c7; color: #ffffff; font-size: 30px; font-weight: 800; letter-spacing: 6px; padding: 10px 28px; border-radius: 8px; font-family: monospace;">
+            ${otpCode}
+          </div>
+          <p style="color: #fbbf24; font-size: 11px; margin-top: 6px;">* รหัส OTP นี้มีอายุการใช้งาน 5 นาที</p>
+        </div>
+        <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+          หากคุณไม่ได้เป็นผู้ทำรายการเข้าสู่ระบบ โปรดอย่าเปิดเผยรหัสนี้แก่ผู้อื่นเพื่อความปลอดภัย
+        </p>
+      </div>
+      <div style="text-align: center; font-size: 10px; color: #64748b; border-top: 1px solid #1e293b; padding-top: 12px;">
+        <p style="margin: 0;">ส่งจากระบบอัตโนมัติ ศูนย์บริการสารสนเทศ อาคารไอที</p>
+      </div>
+    </div>
+  `;
+  const textContent = `เรียน คุณ ${recipientName}\n\nรหัสยืนยัน OTP สำหรับเข้าสู่ระบบ IT Building Portal ของคุณคือ: ${otpCode} (มีอายุ 5 นาที)\n\nหากคุณไม่ได้เป็นผู้ทำรายการ โปรดเพิกเฉยต่อข้อความนี้`;
+
+  const record: SentEmailRecord = {
+    id: `email-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    to,
+    recipientName,
+    subject,
+    htmlContent,
+    textContent,
+    otpCode,
+    purpose: 'LOGIN_2FA',
+    status: 'queued_simulation',
+    sentAt: new Date().toISOString(),
+  };
+
+  const transporter = createTransporter();
+  const fromAddress = process.env.SMTP_FROM || '"IT Building Service" <no-reply@it-building.edu>';
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromAddress,
+        to,
+        subject,
+        text: textContent,
+        html: htmlContent,
+      });
+      record.status = 'sent_smtp';
+      sentEmailsOutbox.unshift(record);
+      if (sentEmailsOutbox.length > 100) sentEmailsOutbox.pop();
+
+      console.log(`[EMAIL DISPATCH - 2FA SMTP SUCCESS] Sent to: ${to}, Subject: ${subject}`);
+      return { success: true, mode: 'smtp' };
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error(`[EMAIL DISPATCH - 2FA SMTP FAILED] Error sending to ${to}:`, errMsg);
+      record.status = 'failed';
+      record.error = errMsg;
+      sentEmailsOutbox.unshift(record);
+      return { success: true, mode: 'simulated', error: `SMTP: ${errMsg}` };
+    }
+  }
+
+  record.status = 'queued_simulation';
+  sentEmailsOutbox.unshift(record);
+  if (sentEmailsOutbox.length > 100) sentEmailsOutbox.pop();
+
+  return { success: true, mode: 'simulated' };
+}
+
+/**
  * Retrieve sent emails for a specific recipient (for testing/preview)
  */
 export function getSentEmailsForUser(email: string): SentEmailRecord[] {

@@ -11,6 +11,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard.tsx';
 import { SatisfactionSection } from './components/SatisfactionSection.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
 import { SupabaseModal } from './components/SupabaseModal.tsx';
+import { ReportModal } from './components/ReportModal.tsx';
 import {
   ShieldCheck,
   Building2,
@@ -34,6 +35,7 @@ function AppContent() {
   >('hero');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [supabaseModalOpen, setSupabaseModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [feedbackTarget, setFeedbackTarget] = useState<{
     type: 'room' | 'equipment' | 'overall';

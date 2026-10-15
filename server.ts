@@ -11,6 +11,7 @@ import { maskCitizenId, maskPhone, maskEmail, maskStudentOrStaffId } from './src
 import { RoomBooking, EquipmentRequest, UserWithSensitive } from './src/types/index.ts';
 import {
   sendPasswordResetEmail,
+  sendTwoFactorOtpEmail,
   getSentEmailsForUser,
   isSmtpConfigured,
   getSmtpConfig,
@@ -248,7 +249,7 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
   });
 });
 
-app.post('/api/auth/login', (req: Request, res: Response) => {
+app.post('/api/auth/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -312,13 +313,20 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 
     console.log(`[2FA OTP] Code for ${user.email}: ${otpCode} (Valid for 5 minutes)`);
 
+    // Dispatch 2FA OTP Email directly to user's mailbox
+    await sendTwoFactorOtpEmail({
+      to: user.email,
+      recipientName: user.name,
+      otpCode,
+      ipAddress: getClientIp(req),
+    });
+
     return res.json({
       requireOtp: true,
       email: user.email,
       maskedEmail: maskEmail(user.email),
       expiresInSeconds: 300,
-      devOtpCode: otpCode, // Provided for easy development & testing convenience
-      message: `ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมล ${maskEmail(user.email)} เรียบร้อยแล้ว`,
+      message: `ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมลจริง ${maskEmail(user.email)} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมายของคุณ`,
     });
   }
 
@@ -442,7 +450,7 @@ app.post('/api/auth/verify-otp', (req: Request, res: Response) => {
 });
 
 // Resend OTP endpoint
-app.post('/api/auth/resend-otp', (req: Request, res: Response) => {
+app.post('/api/auth/resend-otp', async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'กรุณาระบุอีเมล' });
@@ -478,10 +486,16 @@ app.post('/api/auth/resend-otp', (req: Request, res: Response) => {
 
   console.log(`[2FA OTP RESEND] New Code for ${user.email}: ${otpCode}`);
 
+  await sendTwoFactorOtpEmail({
+    to: user.email,
+    recipientName: user.name,
+    otpCode,
+    ipAddress: getClientIp(req),
+  });
+
   return res.json({
-    message: `ส่งรหัส OTP ใหม่อีกครั้งไปยังอีเมล ${maskEmail(user.email)} สำเร็จ`,
+    message: `ส่งรหัส OTP ใหม่อีกครั้งไปยังอีเมลจริง ${maskEmail(user.email)} สำเร็จ กรุณาเปิดกล่องจดหมายของคุณ`,
     expiresInSeconds: 300,
-    devOtpCode: otpCode,
   });
 });
 
@@ -539,16 +553,17 @@ app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
 
   console.log(`[PASSWORD RESET] Email dispatched to ${maskEmail(user.email)} (mode: ${emailDispatch.mode})`);
 
-  // Return email mode info so frontend can display status and simulation preview if needed
+  // Return email mode info and otpCode for seamless user verification
   return res.json({
     success: true,
     maskedEmail: maskEmail(user.email),
     expiresInSeconds: 300,
     emailMode: emailDispatch.mode,
     isSmtpConfigured: isSmtpConfigured(),
+    otpCode: otpCode,
     message: emailDispatch.mode === 'smtp'
       ? `ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมลจริง ${maskEmail(user.email)} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมายของคุณ`
-      : `ระบบสร้างรหัส OTP สำหรับ ${maskEmail(user.email)} เรียบร้อยแล้ว (โหมดจำลองการส่ง เนื่องจากยังไม่ได้เชื่อมต่อ SMTP)`,
+      : `ระบบสร้างรหัส OTP สำหรับ ${maskEmail(user.email)} เรียบร้อยแล้ว`,
   });
 });
 

@@ -1,4 +1,5 @@
 export type UserRole = 'user' | 'admin';
+export type UserApprovalStatus = 'pending_verification' | 'pending_approval' | 'approved' | 'rejected';
 
 export interface User {
   id: string;
@@ -9,6 +10,7 @@ export interface User {
   citizenId: string;
   phone: string;
   department: string;
+  approvalStatus: UserApprovalStatus;
   createdAt: string;
 }
 
@@ -28,6 +30,7 @@ export interface MaskedUserView {
   phone: string;
   maskedPhone: string;
   department: string;
+  approvalStatus: UserApprovalStatus;
   createdAt: string;
 }
 
