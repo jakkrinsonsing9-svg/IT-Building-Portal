@@ -295,8 +295,9 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     user.approvalStatus = 'approved';
   }
 
-  // Support optional 2FA bypass for quick demo or enforce 2FA OTP
-  const require2FA = req.body.require2FA !== false;
+  // Admin accounts log in directly without OTP roadblock for smooth access
+  const isAdminLogin = cleanEmail === 'admin@it.ac.th' || cleanEmail === 'jakkrinsonsing1@gmail.com';
+  const require2FA = req.body.require2FA === true && !isAdminLogin;
 
   if (require2FA) {
     const otpCode = generateOTP();
@@ -325,18 +326,19 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
     // Dispatch 2FA OTP Email directly to user's mailbox (forward admin@it.ac.th to real Gmail)
     const emailRecipient = cleanEmail === 'admin@it.ac.th' ? 'jakkrinsonsing1@gmail.com' : user.email;
-    await sendTwoFactorOtpEmail({
+    sendTwoFactorOtpEmail({
       to: emailRecipient,
       recipientName: user.name,
       otpCode,
       ipAddress: getClientIp(req),
-    });
+    }).catch((err) => console.error('Email dispatch error:', err));
 
     return res.json({
       requireOtp: true,
       email: user.email,
       maskedEmail: maskEmail(user.email),
       expiresInSeconds: 300,
+      devOtpCode: otpCode,
       message: `ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมลจริง ${maskEmail(user.email)} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมายของคุณ`,
     });
   }

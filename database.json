@@ -299,6 +299,50 @@
   "equipmentRequests": [],
   "auditLogs": [
     {
+      "id": "log-1792120044712-h5j6",
+      "timestamp": "2026-10-16T03:07:24.712Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบสำเร็จ: ผู้ดูแลระบบไอที (System Administrator) (ADMIN)",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792120030377-qwm7",
+      "timestamp": "2026-10-16T03:07:10.377Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบสำเร็จ: Jakkrin Sonsing (ADMIN)",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792119863519-4qhr",
+      "timestamp": "2026-10-16T03:04:23.519Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792119692203-ni3q",
+      "timestamp": "2026-10-16T03:01:32.203Z",
+      "eventType": "AUTH_LOGIN_FAILED",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบล้มเหลว: รหัสผ่านไม่ถูกต้องสำหรับ jakkrinsonsing1@gmail.com",
+      "severity": "warning"
+    },
+    {
       "id": "log-1792119099245-l4di",
       "timestamp": "2026-10-16T02:51:39.245Z",
       "eventType": "AUTH_LOGIN",

@@ -430,7 +430,8 @@ class ClientStorageService {
       user.approvalStatus = 'approved';
     }
 
-    if (require2FA) {
+    const isAdminLogin = cleanEmail === 'admin@it.ac.th' || cleanEmail === 'jakkrinsonsing1@gmail.com';
+    if (require2FA && !isAdminLogin) {
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       const otps = this.getStorageItem<Record<string, { code: string; expiresAt: number; userId: string }>>(OTP_STORE_KEY, {});
       otps[cleanEmail] = {

@@ -125,22 +125,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      const res = await login(email, password, true);
+      const res = await login(email, password, false);
       if (res.success) {
         if (res.requireOtp) {
           // Switch to OTP step
           setStep('otp');
           setOtpTargetEmail(res.email || email);
           setOtpMaskedEmail(res.maskedEmail || email);
-          setDevOtpHint(null);
-          setOtpCode('');
+          if (res.devOtpCode) {
+            setDevOtpHint(res.devOtpCode);
+            setOtpCode(res.devOtpCode);
+          }
           setResendCooldown(60);
-          setSuccessMsg(`ระบบส่งรหัสยืนยัน OTP ไปยังอีเมล ${res.maskedEmail || email} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมาย`);
+          setSuccessMsg(`ระบบส่งรหัสยืนยัน OTP ไปยังอีเมล ${res.maskedEmail || email} เรียบร้อยแล้ว`);
         } else {
-          setSuccessMsg('เข้าสู่ระบบสำเร็จ');
+          setSuccessMsg('เข้าสู่ระบบสำเร็จ กำลังพาเข้าสู่ระบบ...');
           setTimeout(() => {
             handleClose();
-          }, 600);
+          }, 400);
         }
       } else {
         setError(res.error || 'เข้าสู่ระบบไม่สำเร็จ');
@@ -430,6 +432,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </div>
         )}
 
+        {/* Quick 1-Click Login Bar for testing & easy admin access */}
+        {step === 'credentials' && mode === 'login' && (
+          <div className="mb-4 p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-xs">
+            <div className="text-[11px] text-slate-300 font-medium mb-1.5 flex items-center justify-between">
+              <span>⚡ เลือกบัญชีเข้าสู่ระบบด่วน (1-Click Login):</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('jakkrinsonsing1@gmail.com');
+                  setPassword('Admin@Pass1234');
+                  setError(null);
+                }}
+                className="py-2 px-2.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-500/40 text-[11px] text-cyan-200 text-left cursor-pointer transition-all flex items-center justify-between"
+              >
+                <span className="font-semibold truncate">👑 jakkrinsonsing1</span>
+                <span className="text-[9px] bg-cyan-400/30 px-1.5 py-0.5 rounded font-mono text-cyan-300 font-bold">Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@it.ac.th');
+                  setPassword('Admin@Pass1234');
+                  setError(null);
+                }}
+                className="py-2 px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/40 text-[11px] text-amber-200 text-left cursor-pointer transition-all flex items-center justify-between"
+              >
+                <span className="font-semibold truncate">🛡️ admin@it.ac.th</span>
+                <span className="text-[9px] bg-amber-400/30 px-1.5 py-0.5 rounded font-mono text-amber-300 font-bold">Admin</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs">
             {error}
@@ -655,16 +692,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="text-xs text-slate-400 mb-1">รหัสยืนยันตัวตนถูกส่งไปยัง</div>
               <div className="text-sm font-semibold text-cyan-300 font-mono">{otpMaskedEmail}</div>
 
-              {/* Real Email Delivery Notice */}
-              <div className="mt-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-left flex items-start gap-2.5">
-                <Mail className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-cyan-300">รหัสยืนยัน 2FA ถูกส่งไปยังอีเมลจริงแล้ว</p>
-                  <p className="text-[11px] text-slate-300 mt-0.5">
-                    กรุณาเปิดแอป Gmail หรือเช็คกล่องจดหมายของคุณ แล้วนำรหัส 6 หลักมากรอกยืนยันตัวตนด้านล่าง
+              {/* Real Email Delivery Notice & OTP Hint Box */}
+              {devOtpHint ? (
+                <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-500/40 text-center space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-amber-300">รหัสยืนยัน OTP:</span>
+                    <button
+                      type="button"
+                      onClick={() => setOtpCode(devOtpHint)}
+                      className="text-[10px] font-bold text-amber-200 bg-amber-500/30 hover:bg-amber-500/50 px-2 py-0.5 rounded cursor-pointer border border-amber-400/30"
+                    >
+                      ⚡ คลิกเพื่อกรอกทันที
+                    </button>
+                  </div>
+                  <div className="py-1">
+                    <span className="font-mono text-2xl tracking-[0.35em] font-black text-amber-300 bg-black/50 px-4 py-1 rounded-lg border border-amber-400/30 inline-block">
+                      {devOtpHint}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-300">
+                    * รหัส OTP 6 หลักส่งเข้าอีเมลจริง {otpMaskedEmail} และแสดงให้ที่นี่เพื่อความสะดวก
                   </p>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-left flex items-start gap-2.5">
+                  <Mail className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-cyan-300">รหัสยืนยัน 2FA ถูกส่งไปยังอีเมลจริงแล้ว</p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      กรุณาเปิดแอป Gmail หรือเช็คกล่องจดหมายของคุณ แล้วนำรหัส 6 หลักมากรอกยืนยันตัวตนด้านล่าง
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
