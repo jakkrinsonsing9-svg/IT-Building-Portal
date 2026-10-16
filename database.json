@@ -23,7 +23,7 @@
       "phone": "0891234567",
       "department": "สาขาวิทยาการคอมพิวเตอร์",
       "createdAt": "2026-10-13T11:59:00.907Z",
-      "passwordHash": "$2b$10$/d89YYFNEphbLxj.seUT1.fFakaj.mkWYH4R/hf8pEBsCwaJ/.mya",
+      "passwordHash": "$2b$10$6EcsUv./FTJgg11AqsAAYepBJoTE/8DR1qq/YejIxypz2vrDBPjN.",
       "approvalStatus": "approved"
     },
     {
@@ -298,6 +298,37 @@
   "bookings": [],
   "equipmentRequests": [],
   "auditLogs": [
+    {
+      "id": "log-1792120632578-5bd7",
+      "timestamp": "2026-10-16T03:17:12.578Z",
+      "eventType": "AUTH_LOGIN",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "ipAddress": "127.0.0.1",
+      "action": "รีเซ็ตรหัสผ่านใหม่สำเร็จสำหรับ jakkrinsonsing1@gmail.com",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792120627972-h06e",
+      "timestamp": "2026-10-16T03:17:07.972Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบสำเร็จ: ผู้ดูแลระบบไอที (System Administrator) (ADMIN)",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792120619673-n90p",
+      "timestamp": "2026-10-16T03:16:59.673Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "เข้าสู่ระบบสำเร็จ: Jakkrin Sonsing (ADMIN)",
+      "severity": "info"
+    },
     {
       "id": "log-1792120044712-h5j6",
       "timestamp": "2026-10-16T03:07:24.712Z",

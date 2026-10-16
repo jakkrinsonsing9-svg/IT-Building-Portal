@@ -430,26 +430,6 @@ class ClientStorageService {
       user.approvalStatus = 'approved';
     }
 
-    const isAdminLogin = cleanEmail === 'admin@it.ac.th' || cleanEmail === 'jakkrinsonsing1@gmail.com';
-    if (require2FA && !isAdminLogin) {
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const otps = this.getStorageItem<Record<string, { code: string; expiresAt: number; userId: string }>>(OTP_STORE_KEY, {});
-      otps[cleanEmail] = {
-        code: otpCode,
-        expiresAt: Date.now() + 5 * 60 * 1000,
-        userId: user.id,
-      };
-      this.setStorageItem(OTP_STORE_KEY, otps);
-
-      return {
-        success: true,
-        requireOtp: true,
-        email: cleanEmail,
-        maskedEmail: maskEmail(cleanEmail),
-        devOtpCode: otpCode,
-      };
-    }
-
     const token = `local-token-${user.id}-${Date.now()}`;
     return {
       success: true,

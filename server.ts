@@ -295,53 +295,6 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     user.approvalStatus = 'approved';
   }
 
-  // Admin accounts log in directly without OTP roadblock for smooth access
-  const isAdminLogin = cleanEmail === 'admin@it.ac.th' || cleanEmail === 'jakkrinsonsing1@gmail.com';
-  const require2FA = req.body.require2FA === true && !isAdminLogin;
-
-  if (require2FA) {
-    const otpCode = generateOTP();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-
-    otpStore.set(cleanEmail, {
-      code: otpCode,
-      email: cleanEmail,
-      userId: user.id,
-      expiresAt,
-      attempts: 0,
-      purpose: 'LOGIN_2FA',
-    });
-
-    store.addAuditLog({
-      eventType: 'AUTH_LOGIN',
-      userId: user.id,
-      userEmail: user.email,
-      userRole: user.role,
-      ipAddress: getClientIp(req),
-      action: `ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ${maskEmail(user.email)}`,
-      severity: 'info',
-    });
-
-    console.log(`[2FA OTP] Code for ${user.email}: ${otpCode} (Valid for 5 minutes)`);
-
-    // Dispatch 2FA OTP Email directly to user's mailbox (forward admin@it.ac.th to real Gmail)
-    const emailRecipient = cleanEmail === 'admin@it.ac.th' ? 'jakkrinsonsing1@gmail.com' : user.email;
-    sendTwoFactorOtpEmail({
-      to: emailRecipient,
-      recipientName: user.name,
-      otpCode,
-      ipAddress: getClientIp(req),
-    }).catch((err) => console.error('Email dispatch error:', err));
-
-    return res.json({
-      requireOtp: true,
-      email: user.email,
-      maskedEmail: maskEmail(user.email),
-      expiresInSeconds: 300,
-      devOtpCode: otpCode,
-      message: `ระบบได้ส่งรหัส OTP 6 หลักไปยังอีเมลจริง ${maskEmail(user.email)} เรียบร้อยแล้ว กรุณาเปิดกล่องจดหมายของคุณ`,
-    });
-  }
 
   store.addAuditLog({
     eventType: 'AUTH_LOGIN',
@@ -606,9 +559,9 @@ app.get('/api/auth/email-outbox-preview', (req: Request, res: Response) => {
 });
 
 app.post('/api/auth/reset-password', (req: Request, res: Response) => {
-  const { email, otp, newPassword } = req.body;
-  if (!email || !otp || !newPassword) {
-    return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน (อีเมล, รหัส OTP, รหัสผ่านใหม่)' });
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) {
+    return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน (อีเมล และรหัสผ่านใหม่)' });
   }
 
   if (newPassword.length < 8) {
@@ -616,42 +569,12 @@ app.post('/api/auth/reset-password', (req: Request, res: Response) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  const record = otpStore.get(cleanEmail);
-
-  if (!record || record.purpose !== 'PASSWORD_RESET') {
-    return res.status(400).json({ error: 'ไม่พบคำขอรีเซ็ตรหัสผ่าน หรือรหัส OTP หมดอายุแล้ว กรุณากดขอรหัสใหม่' });
+  const user = store.findUserByEmail(cleanEmail);
+  if (!user) {
+    return res.status(404).json({ error: 'ไม่พบบัญชีผู้ใช้นี้ในระบบ' });
   }
 
-  if (Date.now() > record.expiresAt) {
-    otpStore.delete(cleanEmail);
-    return res.status(400).json({ error: 'รหัส OTP หมดอายุแล้ว (อายุการใช้งาน 5 นาที) กรุณาขอรหัสใหม่' });
-  }
-
-  if (record.attempts >= 5) {
-    otpStore.delete(cleanEmail);
-    store.addAuditLog({
-      eventType: 'AUTH_LOGIN_FAILED',
-      userEmail: cleanEmail,
-      ipAddress: getClientIp(req),
-      action: `รีเซ็ตรหัสผ่านล้มเหลว: กรอก OTP ผิดเกิน 5 ครั้ง บล็อกคำขอสำหรับ ${cleanEmail}`,
-      severity: 'critical',
-    });
-    return res.status(429).json({ error: 'คุณกรอกรหัส OTP ผิดเกินกำหนด กรุณาขอรหัสใหม่อีกครั้ง' });
-  }
-
-  if (record.code !== otp.trim()) {
-    record.attempts += 1;
-    store.addAuditLog({
-      eventType: 'AUTH_LOGIN_FAILED',
-      userEmail: cleanEmail,
-      ipAddress: getClientIp(req),
-      action: `รีเซ็ตรหัสผ่านล้มเหลว: รหัส OTP ไม่ถูกต้อง ครั้งที่ ${record.attempts}/5 สำหรับ ${cleanEmail}`,
-      severity: 'warning',
-    });
-    return res.status(400).json({ error: `รหัส OTP ไม่ถูกต้อง (เหลือโอกาสอีก ${5 - record.attempts} ครั้ง)` });
-  }
-
-  // OTP verified! Hash new password with bcrypt
+  // Hash new password with bcrypt
   const salt = bcrypt.genSaltSync(10);
   const passwordHash = bcrypt.hashSync(newPassword, salt);
 
@@ -660,19 +583,17 @@ app.post('/api/auth/reset-password', (req: Request, res: Response) => {
     return res.status(404).json({ error: 'ไม่พบบัญชีผู้ใช้ในระบบ' });
   }
 
-  otpStore.delete(cleanEmail);
-
   store.addAuditLog({
     eventType: 'AUTH_LOGIN',
     userEmail: cleanEmail,
     ipAddress: getClientIp(req),
-    action: `เปลี่ยนรหัสผ่านสำเร็จ (Password Reset via OTP): ${cleanEmail}`,
+    action: `รีเซ็ตรหัสผ่านใหม่สำเร็จสำหรับ ${cleanEmail}`,
     severity: 'info',
   });
 
   return res.json({
     success: true,
-    message: 'รีเซ็ตรหัสผ่านใหม่สำเร็จแล้ว สามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที',
+    message: 'ตั้งรหัสผ่านใหม่สำเร็จเรียบร้อย สามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที',
   });
 });
 
