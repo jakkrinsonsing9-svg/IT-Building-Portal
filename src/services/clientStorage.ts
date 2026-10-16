@@ -37,6 +37,7 @@ function getInitialLocalData() {
     citizenId: '1100200112233',
     phone: '0812345678',
     department: 'ศูนย์บริการสารสนเทศและเทคโนโลยี (IT Operations)',
+    approvalStatus: 'approved',
     createdAt: new Date().toISOString(),
     passwordHash: adminHash,
   };
@@ -311,6 +312,7 @@ class ClientStorageService {
       phone: u.phone,
       maskedPhone: maskPhone(u.phone),
       department: u.department,
+      approvalStatus: u.approvalStatus || 'approved',
       createdAt: u.createdAt,
     };
   }
@@ -366,6 +368,7 @@ class ClientStorageService {
       citizenId: citizenId.trim(),
       phone: phone.trim(),
       department: department?.trim() || 'สำนักวิชาเทคโนโลยีสารสนเทศ',
+      approvalStatus: role === 'admin' ? 'approved' : 'pending_approval',
       createdAt: new Date().toISOString(),
       passwordHash,
     };

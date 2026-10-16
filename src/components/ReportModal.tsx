@@ -328,7 +328,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A01</td>
                         <td className="border border-slate-300 p-2 font-semibold">Broken Access Control</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ส่งคำขอแก้ไข/ลบ Booking ID ของผู้อื่น (IDOR Simulation) -> เซิร์ฟเวอร์ตรวจสอบความเป็นเจ้าของ และปฏิเสธคำขอด้วย <code>HTTP 403 Forbidden</code> 100%
+                          ส่งคำขอแก้ไข/ลบ Booking ID ของผู้อื่น (IDOR Simulation) → เซิร์ฟเวอร์ตรวจสอบความเป็นเจ้าของ และปฏิเสธคำขอด้วย <code>HTTP 403 Forbidden</code> 100%
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -336,7 +336,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A02</td>
                         <td className="border border-slate-300 p-2 font-semibold">Cryptographic Failures</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ตรวจสอบการจัดเก็บรหัสผ่านในฐานข้อมูลและการรั่วไหลของข้อมูล PI -> รหัสผ่านทุกบัญชีใช้ Bcrypt (10 Salt Rounds) และปิดบังข้อมูล PII 4 ฟิลด์ตาม PDPA
+                          ตรวจสอบการจัดเก็บรหัสผ่านในฐานข้อมูลและการรั่วไหลของข้อมูล PII → รหัสผ่านทุกบัญชีใช้ Bcrypt (10 Salt Rounds) และปิดบังข้อมูล PII 4 ฟิลด์ตาม PDPA
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -344,7 +344,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A03</td>
                         <td className="border border-slate-300 p-2 font-semibold">Injection (SQLi / XSS)</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ทดสอบยิง SQLi Payloads (<code>' OR '1'='1</code>) และ XSS (<code>&lt;script&gt;</code>) -> มี Input Sanitization และ Type Casting ป้องกันการแทรกคำสั่งอันตราย
+                          ทดสอบยิง SQLi Payloads (<code>' OR '1'='1</code>) และ XSS (<code>&lt;script&gt;</code>) → มี Input Sanitization และ Type Casting ป้องกันการแทรกคำสั่งอันตราย
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -352,7 +352,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A04</td>
                         <td className="border border-slate-300 p-2 font-semibold">Insecure Design</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ตรวจสอบตรรกะการจองห้องซ้ำซ้อนและการยืมของเกินสต็อก -> มี Conflict Detection ป้องกันเวลาจองชนกัน และตรวจสอบสต็อกคงเหลือแบบเรียลไทม์
+                          ตรวจสอบตรรกะการจองห้องซ้ำซ้อนและการยืมของเกินสต็อก → มี Conflict Detection ป้องกันเวลาจองชนกัน และตรวจสอบสต็อกคงเหลือแบบเรียลไทม์
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -360,7 +360,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A05</td>
                         <td className="border border-slate-300 p-2 font-semibold">Security Misconfiguration</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ตรวจสอบ HTTP Security Headers, CORS -> มีการกำหนด <code>X-Content-Type-Options: nosniff</code>, <code>X-XSS-Protection</code> และไม่แสดง Internal Stack Trace
+                          ตรวจสอบ HTTP Security Headers, CORS → มีการกำหนด <code>X-Content-Type-Options: nosniff</code>, <code>X-XSS-Protection</code> และไม่แสดง Internal Stack Trace
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -368,7 +368,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A06</td>
                         <td className="border border-slate-300 p-2 font-semibold">Vulnerable Components</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ตรวจสอบ Dependencies และไลบรารีในระบบ -> ใช้เวอร์ชันเสถียร ล่าสุด ผ่านการทดสอบ Build และ Type Checking (TypeScript 0 Error)
+                          ตรวจสอบ Dependencies และไลบรารีในระบบ → ใช้เวอร์ชันเสถียร ล่าสุด ผ่านการทดสอบ Build และ Type Checking (TypeScript 0 Error)
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -376,7 +376,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A07</td>
                         <td className="border border-slate-300 p-2 font-semibold">Identification & Auth Failures</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ทดสอบ Brute-Force โจมตีรหัส OTP -> OTP มีอายุ 5 นาที สุ่มผิดเกิน 5 ครั้งจะถูกทำลายทันที และเชื่อมต่อ Gmail SMTP จริง
+                          ทดสอบ Brute-Force โจมตีรหัส OTP → OTP มีอายุ 5 นาที สุ่มผิดเกิน 5 ครั้งจะถูกทำลายทันที และเชื่อมต่อ Gmail SMTP จริง
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -384,7 +384,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A08</td>
                         <td className="border border-slate-300 p-2 font-semibold">Software & Data Integrity</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ตรวจสอบ Body Parser Limit และ JSON Payload -> มีการจำกัด Payload Size เหมาะสม และตรวจสอบ Validation Schema ก่อนบันทึกข้อมูลทุกครั้ง
+                          ตรวจสอบ Body Parser Limit และ JSON Payload → มีการจำกัด Payload Size เหมาะสม และตรวจสอบ Validation Schema ก่อนบันทึกข้อมูลทุกครั้ง
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -392,7 +392,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A09</td>
                         <td className="border border-slate-300 p-2 font-semibold">Logging & Monitoring Failures</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ตรวจสอบการบันทึก Audit Log -> มี Security Audit Trail บันทึกทุกกิจกรรมสำคัญ (LOGIN, REGISTER, PII_UNMASK, ADMIN_ACTION) พร้อม IP Address
+                          ตรวจสอบการบันทึก Audit Log → มี Security Audit Trail บันทึกทุกกิจกรรมสำคัญ (LOGIN, REGISTER, PII_UNMASK, ADMIN_ACTION) พร้อม IP Address
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>
@@ -400,7 +400,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose }) => 
                         <td className="border border-slate-300 p-2 text-center font-mono font-bold">A10</td>
                         <td className="border border-slate-300 p-2 font-semibold">Server-Side Request Forgery</td>
                         <td className="border border-slate-300 p-2 text-slate-800">
-                          ทดสอบการส่ง URL ภายนอกเข้าสู่เซิร์ฟเวอร์ -> เซิร์ฟเวอร์ไม่เปิด Endpoint รับ Remote URL ที่ไม่มีการตรวจสอบ ป้องกันการโจมตี SSRF
+                          ทดสอบการส่ง URL ภายนอกเข้าสู่เซิร์ฟเวอร์ → เซิร์ฟเวอร์ไม่เปิด Endpoint รับ Remote URL ที่ไม่มีการตรวจสอบ ป้องกันการโจมตี SSRF
                         </td>
                         <td className="border border-slate-300 p-2 text-center text-emerald-700 font-bold">10/10 ผ่าน</td>
                       </tr>

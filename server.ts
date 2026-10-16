@@ -64,12 +64,12 @@ app.get('/api/download/report', (_req: Request, res: Response) => {
   return res.status(404).send('Report file not found');
 });
 
-app.get('/api/download/report-md', (_req: Request, res: Response) => {
-  const filePath = path.resolve(process.cwd(), '.aistudio/artifacts/brain/c076df36-bb28-46f4-99c3-fd40b68ea5ef/system_and_pentest_report.md');
+app.get('/api/download/presentation', (_req: Request, res: Response) => {
+  const filePath = path.resolve(process.cwd(), 'public/presentation_slides.html');
   if (fs.existsSync(filePath)) {
-    return res.download(filePath, 'รายงานผลการทดสอบระบบและ_Pentest_IT_Building.md');
+    return res.download(filePath, 'สไลด์นำเสนอระบบ_IT_Building_Portal.html');
   }
-  return res.status(404).send('Markdown report file not found');
+  return res.status(404).send('Presentation file not found');
 });
 
 // In-memory OTP storage for 2FA verification
@@ -210,6 +210,7 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
     citizenId: citizenId.trim(),
     phone: phone.trim(),
     department: department?.trim() || 'สำนักวิชาเทคโนโลยีสารสนเทศ',
+    approvalStatus: role === 'admin' ? 'approved' : 'pending_approval',
     createdAt: new Date().toISOString(),
     passwordHash,
   };
@@ -239,6 +240,7 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
     phone: newUser.phone,
     maskedPhone: maskPhone(newUser.phone),
     department: newUser.department,
+    approvalStatus: newUser.approvalStatus,
     createdAt: newUser.createdAt,
   };
 
@@ -313,9 +315,10 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
     console.log(`[2FA OTP] Code for ${user.email}: ${otpCode} (Valid for 5 minutes)`);
 
-    // Dispatch 2FA OTP Email directly to user's mailbox
+    // Dispatch 2FA OTP Email directly to user's mailbox (forward admin@it.ac.th to real Gmail)
+    const emailRecipient = cleanEmail === 'admin@it.ac.th' ? 'jakkrinsonsing1@gmail.com' : user.email;
     await sendTwoFactorOtpEmail({
-      to: user.email,
+      to: emailRecipient,
       recipientName: user.name,
       otpCode,
       ipAddress: getClientIp(req),
@@ -486,8 +489,9 @@ app.post('/api/auth/resend-otp', async (req: Request, res: Response) => {
 
   console.log(`[2FA OTP RESEND] New Code for ${user.email}: ${otpCode}`);
 
+  const emailRecipient = cleanEmail === 'admin@it.ac.th' ? 'jakkrinsonsing1@gmail.com' : user.email;
   await sendTwoFactorOtpEmail({
-    to: user.email,
+    to: emailRecipient,
     recipientName: user.name,
     otpCode,
     ipAddress: getClientIp(req),
@@ -543,9 +547,10 @@ app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
     severity: 'info',
   });
 
-  // Dispatch email directly to the recipient's email address
+  // Dispatch email directly to the recipient's email address (forward admin@it.ac.th to real Gmail)
+  const emailRecipient = cleanEmail === 'admin@it.ac.th' ? 'jakkrinsonsing1@gmail.com' : user.email;
   const emailDispatch = await sendPasswordResetEmail({
-    to: user.email,
+    to: emailRecipient,
     recipientName: user.name,
     otpCode,
     ipAddress: getClientIp(req),

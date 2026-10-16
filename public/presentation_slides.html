@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สไลด์นำเสนอโครงงาน: IT Building Resource Management Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #0b1120;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+    }
+    .toolbar-no-print {
+      max-width: 1040px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1e293b;
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .btn-pdf {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      color: #ffffff;
+      font-weight: 700;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Kanit', sans-serif;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-pdf:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
+    }
+    .slides-wrapper {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .slide-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 18px;
+      padding: 36px 44px;
+      min-height: 580px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      page-break-after: always;
+      page-break-inside: avoid;
+    }
+    .slide-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #06b6d4, #3b82f6, #10b981);
+    }
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(6, 182, 212, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Kanit', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .slide-num {
+      position: absolute;
+      top: 30px;
+      right: 40px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 700;
+    }
+    h1, h2, h3, h4 {
+      font-family: 'Kanit', sans-serif;
+      margin: 0;
+      font-weight: 700;
+    }
+    .slide-title {
+      font-size: 26px;
+      color: #ffffff;
+      margin-top: 8px;
+      margin-bottom: 6px;
+    }
+    .slide-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .slide-content {
+      flex: 1;
+    }
+    .slide-footer {
+      border-top: 1px solid #1e293b;
+      padding-top: 14px;
+      margin-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .feature-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .feature-box.highlight {
+      border-color: rgba(6, 182, 212, 0.4);
+      background: rgba(6, 182, 212, 0.06);
+    }
+    .feature-box h4 {
+      font-size: 14px;
+      color: #38bdf8;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-box p {
+      margin: 0;
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .tag-pill {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 6px;
+    }
+    .tag-blue { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .tag-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-amber { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .tag-purple { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+    table.slide-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+    table.slide-table th, table.slide-table td {
+      border: 1px solid #334155;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    table.slide-table th {
+      background: #1e293b;
+      color: #f8fafc;
+      font-weight: 700;
+      font-family: 'Kanit', sans-serif;
+    }
+    table.slide-table td {
+      background: rgba(15, 23, 42, 0.6);
+      color: #cbd5e1;
+    }
+    .badge-check {
+      color: #34d399;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .step-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .step-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #0284c7;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11px;
+      shrink-0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    @media print {
+      body {
+        background: transparent !important;
+        padding: 0 !important;
+        color: #0f172a !important;
+      }
+      .toolbar-no-print {
+        display: none !important;
+      }
+      .slides-wrapper {
+        gap: 0 !important;
+        max-width: 100% !important;
+      }
+      .slide-card {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        min-height: 180mm !important;
+        padding: 24px 30px !important;
+        margin-bottom: 0 !important;
+      }
+      .slide-card::before {
+        background: #0284c7 !important;
+      }
+      .slide-title {
+        color: #0f172a !important;
+      }
+      .slide-subtitle {
+        color: #475569 !important;
+      }
+      .feature-box {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+      .feature-box h4 {
+        color: #0284c7 !important;
+      }
+      .feature-box p {
+        color: #334155 !important;
+      }
+      table.slide-table th {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        border-color: #cbd5e1 !important;
+      }
+      table.slide-table td {
+        background: #ffffff !important;
+        color: #1e293b !important;
+        border-color: #e2e8f0 !important;
+      }
+      .slide-footer {
+        border-color: #e2e8f0 !important;
+        color: #64748b !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toolbar for browser viewing & printing -->
+  <div class="toolbar-no-print">
+    <div>
+      <div style="font-family: 'Kanit', sans-serif; font-size: 15px; font-weight: 700; color: #38bdf8;">
+        📊 สไลด์เอกสารสรุปนำเสนอระบบ (Presentation Slides Deck)
+      </div>
+      <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+        สรุปฟังก์ชันทั้งหมด + ใช้ทำอะไร + ครบเกณฑ์ 6 ข้อของอาจารย์ (สำหรับนำเสนอ 14 คะแนน)
+      </div>
+    </div>
+    <button class="btn-pdf" onclick="window.print()">
+      🖨️ บันทึกเป็นไฟล์ PDF (Save as PDF)
+    </button>
+  </div>
+
+  <div class="slides-wrapper">
+
+    <!-- ==========================================
+         SLIDE 1: COVER & TITLE
+         ========================================== -->
+    <div class="slide-card" style="justify-content: center; text-align: center; align-items: center;">
+      <div class="slide-num">SLIDE 01 / 08</div>
+      <div style="max-width: 780px;">
+        <span class="slide-badge" style="margin-bottom: 16px;">
+          🎓 โครงงานพัฒนาระบบเทคโนโลยีสารสนเทศ · นำเสนอรายบุคคล (14 คะแนน)
+        </span>
+        <h1 style="font-size: 34px; color: #ffffff; line-height: 1.3; margin-bottom: 12px;">
+          ระบบบริการทรัพยากรส่วนกลาง อาคารเทคโนโลยีสารสนเทศ
+        </h1>
+        <div style="font-size: 20px; color: #38bdf8; font-weight: 600; font-family: 'Kanit', sans-serif; margin-bottom: 24px;">
+          IT Building Resource & Asset Management Portal
+        </div>
+        <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 36px; max-width: 650px; margin-left: auto; margin-right: auto;">
+          เว็บแอปพลิเคชันจัดการจองห้องแล็บและขอยืมครุภัณฑ์ไอทีส่วนกลางแบบครบวงจร พร้อมระบบรักษาความมั่นคงปลอดภัยสารสนเทศตามมาตรฐาน OWASP Top 10 และ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)
+        </p>
+
+        <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px 28px; display: inline-flex; gap: 40px; text-align: left;">
+          <div>
+            <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">ผู้นำเสนอโครงงาน</div>
+            <div style="font-size: 14px; font-weight: 700; color: #ffffff; font-family: 'Kanit';">นายจักริน สอนสิงห์ (Jakkrin Sonsing)</div>
+            <div style="font-size: 11px; color: #38bdf8; font-family: 'JetBrains Mono';">jakkrinsonsing1@gmail.com</div>
+          </div>
+          <div style="border-left: 1px solid #334155; padding-left: 40px;">
+            <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">สถานะระบบ & ความปลอดภัย</div>
+            <div style="font-size: 14px; font-weight: 700; color: #34d399; font-family: 'Kanit';">OWASP Pentest Grade A+ (100/100)</div>
+            <div style="font-size: 11px; color: #fcd34d;">ผ่านเกณฑ์ขั้นต่ำรายวิชา 6/6 ข้อ (100%)</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer" style="width: 100%;">
+        <span>คณะเทคโนโลยีสารสนเทศ · สไลด์นำเสนอโครงงานวิชาการ</span>
+        <span>ตุลาคม 2569 (2026)</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 2: SYSTEM ARCHITECTURE & GOALS
+         ========================================== -->
+    <div class="slide-card">
+      <div class="slide-num">SLIDE 02 / 08</div>
+      <div>
+        <span class="slide-badge">สถาปัตยกรรม & วัตถุประสงค์ระบบ</span>
+        <h2 class="slide-title">ภาพรวมระบบและเทคโนโลยีที่ใช้พัฒนา (Tech Stack)</h2>
+        <p class="slide-subtitle">แก้ปัญหาการจองห้องชนกัน การยืมของสูญหาย และการรั่วไหลของข้อมูลส่วนบุคคลด้วยสถาปัตยกรรมที่ทันสมัย</p>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-3" style="margin-bottom: 20px;">
+          <div class="feature-box highlight">
+            <h4>🖥️ Frontend Presentation Layer</h4>
+            <p><strong>React 19 + TypeScript + Vite:</strong> ออกแบบด้วย Tailwind CSS และ Framer Motion มีความลื่นไหลสูง รองรับ Responsive บนมือถือและแท็บเล็ต 100%</p>
+            <span class="tag-pill tag-blue">Single Page Application (SPA)</span>
+          </div>
+
+          <div class="feature-box highlight">
+            <h4>⚙️ Backend & API Gateway</h4>
+            <p><strong>Node.js + Express:</strong> ระบบ RESTful APIs พร้อม Middlewares ตรวจสอบสิทธิ์ (RBAC: <code>requireAuth</code>, <code>requireAdmin</code>) และป้องกันการโจมตี IDOR</p>
+            <span class="tag-pill tag-green">Zero-Trust Authorization</span>
+          </div>
+
+          <div class="feature-box highlight">
+            <h4>🛡️ Security & Authentication</h4>
+            <p><strong>Bcrypt (Salt 10) + 2FA OTP:</strong> รหัสผ่านไม่เก็บ Plaintext, เชื่อมต่อ Gmail SMTP Server จริง ส่ง OTP เข้ากล่องจดหมาย, ปิดบังข้อมูลส่วนบุคคลตาม PDPA</p>
+            <span class="tag-pill tag-amber">RFC 6238 & NIST SP 800-63B</span>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="feature-box">
+            <h4>🎯 ปัญหาเดิมก่อนมีระบบ (Before)</h4>
+            <p>• นักศึกษาและอาจารย์จองห้องแล็บเวลาชนกัน ไม่มีตารางตรวจสอบแบบเรียลไทม์<br/>
+               • ครุภัณฑ์และอุปกรณ์สูญหาย ไม่ทราบว่าใครเป็นผู้ยืม และเหลือของกี่ชิ้น<br/>
+               • กรอกข้อมูลส่วนตัวในกระดาษ ทำให้เบอร์โทรและเลขบัตรประชาชนรั่วไหล</p>
+          </div>
+          <div class="feature-box">
+            <h4>🚀 ผลลัพธ์หลังใช้งานระบบ (After)</h4>
+            <p>• ตรวจสอบห้องว่างและเวลาทับซ้อนอัตโนมัติ (Overlap Conflict Detection)<br/>
+               • ติดตามสต็อกคงเหลือแบบเรียลไทม์ พร้อมบันทึกประวัติการส่งมอบและคืนของ<br/>
+               • Data Masking ปิดบังข้อมูล PII 4 ฟิลด์หลัก ปลอดภัยตามกฎหมาย PDPA</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>โครงสร้างแบบ Full-Stack Architecture ควบคุมความปลอดภัยระดับ Server-Authoritative</span>
+        <span>IT Building Portal</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 3: 6 CORE COURSE REQUIREMENTS
+         ========================================== -->
+    <div class="slide-card">
+      <div class="slide-num">SLIDE 03 / 08</div>
+      <div>
+        <span class="slide-badge">ความสอดคล้องตามเกณฑ์ประเมิน</span>
+        <h2 class="slide-title">ตารางตรวจสอบเกณฑ์ขั้นต่ำ 6 ข้อของรายวิชา (14 คะแนน)</h2>
+        <p class="slide-subtitle">สรุปความสมบูรณ์ของฟีเจอร์ตามเกณฑ์ที่อาจารย์กำหนด ครบถ้วน 100% พร้อมตอบคำถามได้อย่างมั่นใจ</p>
+      </div>
+
+      <div class="slide-content">
+        <table class="slide-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">ข้อ</th>
+              <th style="width: 25%;">เกณฑ์ข้อกำหนดของอาจารย์</th>
+              <th style="width: 55%;">ฟังก์ชันและการทำงานจริงในระบบของเรา</th>
+              <th style="width: 15%; text-align: center;">ผลการประเมิน</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: center; font-weight: 700;">1</td>
+              <td><strong>สมัครสมาชิกและเข้าสู่ระบบ</strong><br/><span style="color: #94a3b8; font-size: 10.5px;">(Password Hashing ที่เหมาะสม)</span></td>
+              <td>ใช้ <strong>Bcrypt Cost Factor 10 (Salt 10 Rounds)</strong> เข้ารหัสก่อนบันทึกลง Store ไม่มี Plaintext พร้อมระบบ <strong>2FA OTP ส่งตรงเข้า Gmail จริง</strong></td>
+              <td style="text-align: center;"><span class="badge-check">✅ ผ่าน (เกินเกณฑ์)</span></td>
+            </tr>
+            <tr>
+              <td style="text-align: center; font-weight: 700;">2</td>
+              <td><strong>ผู้ใช้อย่างน้อย 2 บทบาท</strong><br/><span style="color: #94a3b8; font-size: 10.5px;">(User และ Admin สิทธิ์ต่างกันชัดเจน)</span></td>
+              <td>แยกสิทธิ์ด้วย <strong>RBAC Middleware</strong> โดย User จอง/ยืม/ดูเฉพาะรายการตนเอง ส่วน Admin อนุมัติ/ปฏิเสธ, เพิ่มห้อง/อุปกรณ์, ดูสถิติ และ Audit Log</td>
+              <td style="text-align: center;"><span class="badge-check">✅ ผ่าน 100%</span></td>
+            </tr>
+            <tr>
+              <td style="text-align: center; font-weight: 700;">3</td>
+              <td><strong>CRUD ที่ข้อมูลมี "เจ้าของ"</strong><br/><span style="color: #94a3b8; font-size: 10.5px;">(User A แก้/ลบของ User B ไม่ได้)</span></td>
+              <td>มี 2 ชุด (จองห้อง + ยืมอุปกรณ์) ทุกรายการผูก <code>userId</code> หาก User A ส่ง ID ของ User B มาแก้ไข เซิร์ฟเวอร์จะตอบ <strong>HTTP 403 Forbidden</strong> ทันที</td>
+              <td style="text-align: center;"><span class="badge-check">✅ ผ่าน (กัน IDOR)</span></td>
+            </tr>
+            <tr>
+              <td style="text-align: center; font-weight: 700;">4</td>
+              <td><strong>ฟอร์มรับข้อมูล อย่างน้อย 2 ฟอร์ม</strong><br/><span style="color: #94a3b8; font-size: 10.5px;">(บันทึกฐานข้อมูลและแสดงผลกลับ)</span></td>
+              <td>มี 3 ฟอร์ม: (1) ฟอร์มจองห้องแล็บ (2) ฟอร์มยืมอุปกรณ์ส่วนกลาง (3) ฟอร์มประเมินความพึงพอใจ 5 ดาว บันทึกลงฐานข้อมูลและแสดงในการ์ดทันที</td>
+              <td style="text-align: center;"><span class="badge-check">✅ ผ่าน (มี 3 ฟอร์ม)</span></td>
+            </tr>
+            <tr>
+              <td style="text-align: center; font-weight: 700;">5</td>
+              <td><strong>ข้อมูลส่วนบุคคลที่ต้องปิดบัง</strong><br/><span style="color: #94a3b8; font-size: 10.5px;">(PII Masking เมื่อแสดงผล)</span></td>
+              <td>ปิดบังข้อมูลตาม PDPA ครบ <strong>4 ฟิลด์</strong>: เลขบัตร ปชช. (1100200****33), เบอร์โทร (081-***-5678), อีเมล, รหัสนักศึกษา พร้อมปุ่ม <strong>Toggle Unmask</strong></td>
+              <td style="text-align: center;"><span class="badge-check">✅ ผ่าน (เกินเกณฑ์)</span></td>
+            </tr>
+            <tr>
+              <td style="text-align: center; font-weight: 700;">6</td>
+              <td><strong>หน้าผู้ดูแลระบบ อย่างน้อย 1 หน้า</strong><br/><span style="color: #94a3b8; font-size: 10.5px;">(Admin Console)</span></td>
+              <td>หน้า Admin Dashboard ครบวงจร: อนุมัติ/ปฏิเสธคำขอพร้อม Admin Note, เพิ่มห้อง/อุปกรณ์พร้อมอัปโหลดรูป, หน้ากราฟวิเคราะห์ข้อมูล และ Security Audit Trail</td>
+              <td style="text-align: center;"><span class="badge-check">✅ ผ่าน 100%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="slide-footer">
+        <span>ตรงตามแบบประเมินรายวิชาทุกข้อ พร้อมแสดงหลักฐานประกอบการให้คะแนน</span>
+        <span>เกณฑ์ขั้นต่ำ 6 ข้อ ผ่านครบถ้วน</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 4: USER FEATURES & USE CASES
+         ========================================== -->
+    <div class="slide-card">
+      <div class="slide-num">SLIDE 04 / 08</div>
+      <div>
+        <span class="slide-badge">ฟีเจอร์สำหรับผู้ใช้งานทั่วไป</span>
+        <h2 class="slide-title">ระบบจองห้อง, ยืมอุปกรณ์ และการจัดการคำขอ (User Features)</h2>
+        <p class="slide-subtitle">ฟังก์ชันอำนวยความสะดวกสำหรับนักศึกษาและอาจารย์ เพื่อการเข้าถึงทรัพยากรอาคารไอทีอย่างมีประสิทธิภาพ</p>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-3" style="margin-bottom: 20px;">
+          <div class="feature-box">
+            <h4>🏢 1. ระบบจองห้องปฏิบัติการ</h4>
+            <p><strong>ใช้ทำอะไร:</strong> จองห้องแล็บคอมพิวเตอร์, Cyber Lab, Network Lab, Media Studio หรือห้องประชุมชั้น 2-6<br/>
+            <strong>จุดเด่น:</strong> มีตัวกรองแยกตามชั้น/ประเภท, ตรวจสอบอุปกรณ์เสริมในห้อง (Projector, Mic, Visualizer), และ <em>ระบบเช็กเวลาชนกันอัตโนมัติ</em></p>
+            <span class="tag-pill tag-blue">Conflict Prevention Engine</span>
+          </div>
+
+          <div class="feature-box">
+            <h4>💻 2. ระบบขอยืมของส่วนกลาง</h4>
+            <p><strong>ใช้ทำอะไร:</strong> ขอยืมอุปกรณ์ไอที เช่น กล้อง 4K, eGPU การ์ดจอแยก, จอ Monitor, Drawing Tablet, ชุดสายแลน และบอร์ดไมโครคอนโทรลเลอร์<br/>
+            <strong>จุดเด่น:</strong> แสดงสต็อกคงเหลือแบบ Real-time หักยอดทันที และมีระบบตรวจสอบ Serial Number</p>
+            <span class="tag-pill tag-green">Real-Time Stock Inventory</span>
+          </div>
+
+          <div class="feature-box">
+            <h4>📁 3. แท็บรายการของฉัน (My Records)</h4>
+            <p><strong>ใช้ทำอะไร:</strong> ศูนย์รวมประวัติคำขอทั้งหมดของผู้ใช้คนนั้น ตรวจสอบสถานะว่า "รออนุมัติ", "อนุมัติแล้ว" หรือ "ปฏิเสธ"<br/>
+            <strong>จุดเด่น:</strong> มีฟังก์ชัน <em>แก้ไขวัตถุประสงค์</em> และ <em>กดยกเลิกคำขอ</em> ได้ด้วยตนเอง (CRUD Owner-based)</p>
+            <span class="tag-pill tag-purple">Owner-Based Isolation</span>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="feature-box">
+            <h4>⭐ 4. ระบบประเมินความพึงพอใจ (CSAT Feedback)</h4>
+            <p><strong>ใช้ทำอะไร:</strong> ให้นักศึกษาและอาจารย์ให้คะแนนความพึงพอใจ 1-5 ดาว และส่งข้อเสนอแนะเกี่ยวกับสภาพห้องและอุปกรณ์<br/>
+            <strong>ผลลัพธ์:</strong> คำนวณคะแนนเฉลี่ยแบบถ่วงน้ำหนักและแสดงผลบนการ์ดสถิติหน้าแรกทันที</p>
+          </div>
+          <div class="feature-box">
+            <h4>👁️ 5. ระบบคุ้มครองข้อมูลส่วนบุคคล (PDPA Masking)</h4>
+            <p><strong>ใช้ทำอะไร:</strong> ซ่อนเลขบัตรประชาชน เบอร์โทร และอีเมลบนหน้าจอ เพื่อป้องกันการแอบมอง (Shoulder Surfing)<br/>
+            <strong>ความปลอดภัย:</strong> หากผู้ใช้กดเปิดดูข้อมูลจริง (Toggle Unmask) ระบบจะบันทึก Audit Log พร้อม Timestamp ทันที</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>ใช้งานง่ายผ่านหน้าเว็บแบบ One-Stop Portal ไม่ต้องดาวน์โหลดแอปเพิ่มเติม</span>
+        <span>ฟังก์ชันฝั่งนักศึกษาและอาจารย์</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 5: ADMIN FEATURES & CONTROL
+         ========================================== -->
+    <div class="slide-card">
+      <div class="slide-num">SLIDE 05 / 08</div>
+      <div>
+        <span class="slide-badge">ฟีเจอร์สำหรับผู้ดูแลระบบ</span>
+        <h2 class="slide-title">หน้าผู้ดูแลระบบ และการวิเคราะห์ข้อมูล (Admin Console & Analytics)</h2>
+        <p class="slide-subtitle">แผงควบคุมอัจฉริยะสำหรับเจ้าหน้าที่อาคารไอที เพื่อการอนุมัติทรัพยากร ควบคุมสต็อก และตรวจสอบย้อนหลัง</p>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-3" style="margin-bottom: 20px;">
+          <div class="feature-box">
+            <h4>✅ 1. เวิร์กโฟลว์การอนุมัติคำขอ</h4>
+            <p><strong>ใช้ทำอะไร:</strong> ตรวจสอบรายการจองห้องและยืมของทั้งหมดที่รอดำเนินการ แอดมินสามารถกด <strong>"อนุมัติ"</strong> หรือ <strong>"ปฏิเสธ"</strong> ได้ในคลิกเดียว พร้อมช่องพิมพ์บันทึกข้อความ (Admin Note) แจ้งเหตุผลให้ผู้ใช้ทราบ</p>
+            <span class="tag-pill tag-green">Approval Workflow</span>
+          </div>
+
+          <div class="feature-box">
+            <h4>📦 2. การควบคุมการยืม-คืนอุปกรณ์</h4>
+            <p><strong>ใช้ทำอะไร:</strong> อัปเดตสถานะการส่งมอบของเมื่อนักศึกษามารับอุปกรณ์ ("ส่งมอบแล้ว / Borrowed") และเมื่อนำมาส่งคืน ("รับคืนแล้ว / Returned") โดยระบบจะคืนจำนวนสต็อกให้อัตโนมัติ</p>
+            <span class="tag-pill tag-amber">Return Management</span>
+          </div>
+
+          <div class="feature-box">
+            <h4>📸 3. เพิ่มห้องและอุปกรณ์ใหม่พร้อมรูปถ่าย</h4>
+            <p><strong>ใช้ทำอะไร:</strong> เพิ่มห้องแล็บหรือครุภัณฑ์ชิ้นใหม่เข้าสู่ระบบ รองรับทั้งการ <strong>อัปโหลดรูปถ่ายจริงจากเครื่อง</strong>, การเลือกจากคลังภาพตัวอย่างตึกไอที, หรือการระบุ URL รูปภาพ พร้อมระบุจำนวนและสเปก</p>
+            <span class="tag-pill tag-blue">Asset Creation & Upload</span>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="feature-box">
+            <h4>📊 4. แดชบอร์ดสถิติและการวิเคราะห์ (Data Analytics)</h4>
+            <p><strong>ใช้ทำอะไร:</strong> สรุปสถิติการใช้งานรายสัปดาห์ (Weekly Bookings Bar Chart), อัตราการใช้พื้นที่ (Utilization Rate %), แผนภูมิวงกลมแสดงสัดส่วนสถานะคำขอ และอันดับห้องยอดนิยม เพื่อใช้วางแผนจัดสรรงบประมาณ</p>
+            <span class="tag-pill tag-purple">Executive Data Visualization</span>
+          </div>
+
+          <div class="feature-box">
+            <h4>🛡️ 5. บันทึกความปลอดภัยย้อนหลัง (Security Audit Trail)</h4>
+            <p><strong>ใช้ทำอะไร:</strong> บันทึกประวัติกิจกรรมสำคัญทั้งหมดของระบบ (LOGIN, REGISTER, PII_UNMASK, ADMIN_ACTION) พร้อมระบุ User, IP Address, วันเวลา และระดับความรุนแรง (Severity) เพื่อการตรวจสอบย้อนหลัง</p>
+            <span class="tag-pill tag-green">Non-Repudiation Audit Log</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>จำกัดการเข้าถึงเฉพาะบัญชี Role: Admin เท่านั้น (admin@it.ac.th)</span>
+        <span>ระบบบริหารจัดการระดับองค์กร</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 6: SECURITY & OWASP PENTEST
+         ========================================== -->
+    <div class="slide-card">
+      <div class="slide-num">SLIDE 06 / 08</div>
+      <div>
+        <span class="slide-badge">ความมั่นคงปลอดภัยสารสนเทศ</span>
+        <h2 class="slide-title">มาตรฐานความปลอดภัย และผลการทดสอบ Pentest (OWASP Top 10)</h2>
+        <p class="slide-subtitle">รายงานผลการทดสอบเจาะระบบตามมาตรฐานสากล OWASP Top 10 ได้คะแนนเต็ม 100/100 (เกรด A+)</p>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-4" style="margin-bottom: 20px;">
+          <div class="feature-box">
+            <h4>🛡️ A01: Access Control</h4>
+            <p>ป้องกัน <strong>IDOR 100%</strong>: เซิร์ฟเวอร์ตรวจสอบความเป็นเจ้าของทุกคำขอ PUT/DELETE ปฏิเสธด้วย <code>HTTP 403 Forbidden</code> หากไม่ใช่เจ้าของ</p>
+            <span class="tag-pill tag-green">10/10 ผ่าน</span>
+          </div>
+          <div class="feature-box">
+            <h4>🔑 A02: Cryptography</h4>
+            <p>รหัสผ่านแฮชด้วย <strong>Bcrypt Cost Factor 10</strong> ไม่มี Plaintext ในระบบ และ Mask ข้อมูล PII 4 ฟิลด์ตามมาตรฐาน PDPA</p>
+            <span class="tag-pill tag-green">10/10 ผ่าน</span>
+          </div>
+          <div class="feature-box">
+            <h4>💉 A03: Injection</h4>
+            <p>ทดสอบยิง SQLi (<code>' OR '1'='1</code>) และ XSS (<code>&lt;script&gt;</code>) ข้อมูลผ่าน Sanitization ปลอดภัยจากการโจมตี</p>
+            <span class="tag-pill tag-green">10/10 ผ่าน</span>
+          </div>
+          <div class="feature-box">
+            <h4>📧 A07: Auth & 2FA</h4>
+            <p>มีระบบยืนยันตัวตน 2 ขั้นตอน (2FA OTP) ส่งตรงเข้า <strong>Gmail จริง</strong> สุ่มรหัสใหม่ทุก 5 นาที และมี Brute-Force Rate Limiting</p>
+            <span class="tag-pill tag-green">10/10 ผ่าน</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 15px; font-weight: 700; color: #34d399; font-family: 'Kanit';">
+              🏆 ผลการทดสอบเจาะระบบ (Penetration Testing Summary)
+            </div>
+            <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">
+              ผ่านการตรวจสอบช่องโหว่ครอบคลุมทั้ง 10 หมวดหมู่ (A01 ถึง A10) ไม่พบช่องโหว่ระดับ Critical/High ในระบบ
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 26px; font-weight: 800; color: #34d399; font-family: 'JetBrains Mono';">100 / 100</div>
+            <div style="font-size: 11px; color: #6ee7b7; text-transform: uppercase;">Grade A+ Verified</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; font-size: 11.5px; color: #94a3b8; text-align: center;">
+          * เอกสารรายงานฉบับเต็มส่งใน Google Classroom เพื่อรับคะแนนส่วนรายงาน 6 คะแนน เรียบร้อยแล้ว
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>มาตรฐาน OWASP Top 10:2021 & NIST SP 800-63B</span>
+        <span>ความปลอดภัยระดับ Enterprise</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 7: LIVE DEMO WALKTHROUGH SCRIPT
+         ========================================== -->
+    <div class="slide-card">
+      <div class="slide-num">SLIDE 07 / 08</div>
+      <div>
+        <span class="slide-badge">ขั้นตอนการสาธิต (Demo Script)</span>
+        <h2 class="slide-title">ลำดับการสาธิตระบบในห้องเรียน (สำหรับ 14 คะแนน)</h2>
+        <p class="slide-subtitle">แนวทางการเปิดหน้าจอสาธิตฟังก์ชันทีละขั้นตอน ให้กระชับ ชัดเจน และตรงใจกรรมการผู้ตรวจ</p>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <div>
+            <div class="step-item">
+              <div class="step-circle">1</div>
+              <div>
+                <strong style="color: #38bdf8; font-size: 13px;">หน้าแรก & การจองห้องแล็บ (Room Booking):</strong>
+                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #cbd5e1;">
+                  เปิดหน้า "จองห้องปฏิบัติการ" โชว์ฟิลเตอร์เลือกชั้นและประเภทห้อง คลิกจองห้อง LAB-CYBER ระบุเวลา 10:00-12:00 และเลือกโปรเจกเตอร์ กดบันทึกเพื่อแสดงว่าบันทึกสำเร็จ
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-circle">2</div>
+              <div>
+                <strong style="color: #38bdf8; font-size: 13px;">การยืมของส่วนกลาง (Equipment Borrowing):</strong>
+                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #cbd5e1;">
+                  เปิดแท็บ "ขอยืมของส่วนกลาง" ชี้ให้เห็นสต็อกคงเหลือ กดขอยืมกล้องสตูดิโอ 4K จำนวน 1 ชิ้น โชว์ว่าสต็อกหักลบทันที และข้อมูลถูกบันทึกลงระบบ
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-circle">3</div>
+              <div>
+                <strong style="color: #38bdf8; font-size: 13px;">CRUD รายการของฉัน & PII Masking:</strong>
+                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #cbd5e1;">
+                  เปิดแท็บ "รายการของฉัน" โชว์ว่าเห็นเฉพาะรายการตนเอง กดแก้ไขวัตถุประสงค์ และชี้ให้ดูแถบโปรไฟล์ที่เลขบัตรประชาชนถูก Masking (<code>1100200****33</code>) กดปุ่มดวงตาเพื่อเปิดดู
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="step-item">
+              <div class="step-circle">4</div>
+              <div>
+                <strong style="color: #34d399; font-size: 13px;">หน้าผู้ดูแลระบบ (Admin Console):</strong>
+                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #cbd5e1;">
+                  ล็อกอินเป็นแอดมิน (<code>admin@it.ac.th</code>) โชว์การกด "อนุมัติคำขอ" พร้อมใส่บันทึกข้อความ และโชว์หน้า "เพิ่มอุปกรณ์ใหม่" พร้อมอัปโหลดรูปภาพ
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-circle">5</div>
+              <div>
+                <strong style="color: #34d399; font-size: 13px;">กราฟสถิติ & ความปลอดภัย (Analytics & Security):</strong>
+                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #cbd5e1;">
+                  เปิดหน้า "สถิติ & กราฟ" โชว์ Weekly Usage Chart และเปิดหน้า "Security Audit Trail" โชว์บันทึกกิจกรรมย้อนหลังที่พิสูจน์ว่าระบบบันทึกความปลอดภัยตลอดเวลา
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-circle">6</div>
+              <div>
+                <strong style="color: #fcd34d; font-size: 13px;">ระบบยืนยันตัวตน 2FA OTP & Gmail จริง:</strong>
+                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #cbd5e1;">
+                  สาธิตการล็อกอินด้วย 2FA OTP และการกู้คืนรหัสผ่าน แสดงว่าระบบส่งรหัส 6 หลักเข้าสู่กล่องจดหมาย Gmail จริง
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>ใช้เวลาในการสาธิตประมาณ 4-5 นาที กระชับและครอบคลุมทุกจุดประเมิน</span>
+        <span>สคริปต์การนำเสนอภาคปฏิบัติ</span>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 8: SUMMARY & FAQ FOR Q&A
+         ========================================== -->
+    <div class="slide-card">
+      <div class="slide-num">SLIDE 08 / 08</div>
+      <div>
+        <span class="slide-badge">บทสรุป & เตรียมตอบคำถามอาจารย์</span>
+        <h2 class="slide-title">สรุปภาพรวมโครงงาน และแนวทางการตอบคำถาม (Q&A Ready)</h2>
+        <p class="slide-subtitle">คำถามยอดนิยมที่อาจารย์มักจะถามในการตรวจโปรเจกต์ พร้อมคำตอบเชิงเทคนิคที่ถูกต้อง 100%</p>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2" style="margin-bottom: 20px;">
+          <div class="feature-box">
+            <h4 style="color: #fcd34d;">❓ อาจารย์ถาม: "ระบบป้องกันไม่ให้ User A แอบลบข้อมูล User B ได้อย่างไร?"</h4>
+            <p><strong>💡 คำตอบ:</strong> "ระบบใช้ Server-Side Ownership Verification ครับ โดยใน API <code>DELETE /api/bookings/:id</code> เซิร์ฟเวอร์จะดึงข้อมูล record นั้นขึ้นมาตรวจสอบก่อนว่า <code>record.userId === req.user.id</code> หรือไม่ ถ้าไม่ตรงกัน ระบบจะบล็อกและตอบกลับ <code>HTTP 403 Forbidden</code> ทันที จึงป้องกันช่องโหว่ IDOR ได้ 100% ครับ"</p>
+          </div>
+
+          <div class="feature-box">
+            <h4 style="color: #fcd34d;">❓ อาจารย์ถาม: "รหัสผ่านจัดเก็บอย่างไร มีความปลอดภัยแค่ไหน?"</h4>
+            <p><strong>💡 คำตอบ:</strong> "เราใช้ Bcrypt Hashing พร้อม Cost Factor 10 Rounds ครับ โดยระบบจะสุ่ม Salt ใหม่ทุกครั้งและทำการแฮชทางเดียว (One-Way Hashing) ก่อนบันทึกลงฐานข้อมูล ในระบบจะไม่มี Plaintext Password อยู่เลย แม้ฐานข้อมูลจะรั่วไหลออกไป ผู้โจมตีก็ไม่สามารถถอดรหัสผ่านได้ครับ"</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="feature-box">
+            <h4 style="color: #fcd34d;">❓ อาจารย์ถาม: "ข้อมูลส่วนบุคคลอะไรบ้างที่ทำการ Masking?"</h4>
+            <p><strong>💡 คำตอบ:</strong> "เรา Masking ครบ 4 ฟิลด์ครับ คือ เลขบัตรประชาชน (1100200****33), เบอร์โทร (081-***-5678), อีเมล และรหัสนักศึกษา ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) และถ้าผู้ใช้กดเปิดดูข้อมูลจริง ระบบจะบันทึก Audit Log พร้อม Timestamp เพื่อความโปร่งใสครับ"</p>
+          </div>
+
+          <div class="feature-box highlight" style="text-align: center; display: flex; flex-direction: column; justify-content: center;">
+            <div style="font-size: 20px; font-weight: 700; color: #38bdf8; font-family: 'Kanit';">ขอขอบคุณคณะกรรมการและอาจารย์ทุกท่าน</div>
+            <p style="margin-top: 6px; font-size: 13px; color: #cbd5e1;">
+              พร้อมสำหรับการสาธิตระบบจริง และตอบข้อซักถามเพิ่มเติมครับ
+            </p>
+            <div style="margin-top: 10px; font-size: 12px; font-weight: 700; color: #34d399;">
+              นายจักริน สอนสิงห์ · คณะเทคโนโลยีสารสนเทศ
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>สิ้นสุดการนำเสนอ · IT Building Resource Management Portal</span>
+        <span>คะแนนนำเสนอ 14 คะแนน + รายงาน 6 คะแนน รวม 20 คะแนนเต็ม</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

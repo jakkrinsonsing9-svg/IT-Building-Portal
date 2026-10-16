@@ -10,20 +10,20 @@
       "phone": "0812345678",
       "department": "ศูนย์บริการสารสนเทศและเทคโนโลยี (IT Operations)",
       "createdAt": "2026-10-13T11:59:00.907Z",
-      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyux5U.jrIxEmJ3cfTKStORB3TMU2ZX6fa",
+      "passwordHash": "$2b$10$1ftvjeaMk4hn8N7cCGZntOchHw1g//kHd/DCpCZvUGzgq7SKdm4mK",
       "approvalStatus": "approved"
     },
     {
       "id": "usr-user-002",
       "email": "jakkrinsonsing1@gmail.com",
       "name": "Jakkrin Sonsing",
-      "role": "user",
+      "role": "admin",
       "studentOrStaffId": "STD-65010023",
       "citizenId": "1100200987654",
       "phone": "0891234567",
       "department": "สาขาวิทยาการคอมพิวเตอร์",
       "createdAt": "2026-10-13T11:59:00.907Z",
-      "passwordHash": "$2b$10$v9OczLuck2aKaBgqKhmsyuQ9Jsb/Cg6T3PJPpS.BObuWsSIQms74q",
+      "passwordHash": "$2b$10$/d89YYFNEphbLxj.seUT1.fFakaj.mkWYH4R/hf8pEBsCwaJ/.mya",
       "approvalStatus": "approved"
     },
     {
@@ -298,6 +298,28 @@
   "bookings": [],
   "equipmentRequests": [],
   "auditLogs": [
+    {
+      "id": "log-1792117890245-8ddu",
+      "timestamp": "2026-10-16T02:31:30.245Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ja***1@gmail.com",
+      "severity": "info"
+    },
+    {
+      "id": "log-1792117884097-g0yh",
+      "timestamp": "2026-10-16T02:31:24.097Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@it.ac.th",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ad***n@it.ac.th",
+      "severity": "info"
+    },
     {
       "id": "log-1792034740306-6tcg",
       "timestamp": "2026-10-15T03:25:40.306Z",

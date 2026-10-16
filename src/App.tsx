@@ -166,14 +166,23 @@ function AppContent() {
           <p>
             © 2026 Faculty of Information Technology · ระบบจองห้องและยืมของส่วนกลางตึกไอที
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end">
+            <a
+              href="/presentation_slides.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:text-amber-300 underline font-medium transition-colors"
+            >
+              📊 สไลด์นำเสนอระบบ (PDF 14 คะแนน)
+            </a>
+            <span className="text-slate-600">|</span>
             <a
               href="/system_and_pentest_report.html"
               target="_blank"
               rel="noopener noreferrer"
               className="text-cyan-400 hover:text-cyan-300 underline font-medium transition-colors"
             >
-              📥 เปิด/บันทึกรายงาน Pent Test (PDF 6 คะแนน)
+              📥 รายงาน Pent Test (PDF 6 คะแนน)
             </a>
           </div>
         </div>
