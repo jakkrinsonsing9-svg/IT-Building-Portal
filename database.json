@@ -299,6 +299,17 @@
   "equipmentRequests": [],
   "auditLogs": [
     {
+      "id": "log-1792119099245-l4di",
+      "timestamp": "2026-10-16T02:51:39.245Z",
+      "eventType": "AUTH_LOGIN",
+      "userId": "usr-user-002",
+      "userEmail": "jakkrinsonsing1@gmail.com",
+      "userRole": "admin",
+      "ipAddress": "127.0.0.1",
+      "action": "ส่งรหัส OTP (2FA) สำหรับการเข้าสู่ระบบไปยัง ja***1@gmail.com",
+      "severity": "info"
+    },
+    {
       "id": "log-1792117890245-8ddu",
       "timestamp": "2026-10-16T02:31:30.245Z",
       "eventType": "AUTH_LOGIN",
